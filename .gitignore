@@ -1,0 +1,16 @@
+# API Key
+.env
+.streamlit/secrets.toml
+
+# macOS
+.DS_Store
+
+# SQLite database (ephemeral on Streamlit Cloud)
+knowledge.db
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
