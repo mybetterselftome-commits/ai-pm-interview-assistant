@@ -1,13 +1,13 @@
 """AI 面试助手 V2 - 个性化知识记忆系统"""
 import os
-import re
 import random
 import uuid
-import sqlite3
 import httpx
 import streamlit as st
 from openai import OpenAI
-from datetime import datetime
+from db import (init_db, get_or_create_user, save_chat, update_knowledge,
+                get_user_profile, get_relevant_history, clear_user_data,
+                restore_messages)
 
 # ========== 绕过系统代理 ==========
 for key in ["HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy", "ALL_PROXY", "all_proxy"]:
@@ -33,9 +33,8 @@ if not api_key:
 http_client = httpx.Client(proxy=None)
 client = OpenAI(api_key=api_key, base_url="https://api.deepseek.com", http_client=http_client)
 
-# ========== 数据库路径 ==========
-DB_PATH = os.path.join(os.path.dirname(__file__), "knowledge.db")
-
+# ========== 初始化数据库 ==========
+init_db()
 # ========== AI 面试知识点体系 ==========
 TOPICS = {
     "机器学习": ["机器学习", "ml", "machine learning"],
@@ -87,128 +86,6 @@ def extract_questions(text):
         return True
     return False
 
-# ========== 初始化数据库 ==========
-def init_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            device_id TEXT PRIMARY KEY,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            last_visit TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS chat_history (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            device_id TEXT,
-            role TEXT,
-            content TEXT,
-            topics TEXT,
-            msg_type TEXT DEFAULT 'qa',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS knowledge_state (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            device_id TEXT,
-            topic TEXT,
-            familiarity INTEGER DEFAULT 1,
-            question_count INTEGER DEFAULT 1,
-            last_asked TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(device_id, topic)
-        )
-    """)
-    conn.commit()
-    conn.close()
-
-init_db()
-
-# ========== 数据库操作 ==========
-def get_or_create_user(device_id):
-    conn = sqlite3.connect(DB_PATH)
-    conn.execute("""
-        INSERT OR IGNORE INTO users (device_id) VALUES (?)
-    """, (device_id,))
-    conn.execute("""
-        UPDATE users SET last_visit = CURRENT_TIMESTAMP WHERE device_id = ?
-    """, (device_id,))
-    conn.commit()
-    conn.close()
-
-def save_chat(device_id, role, content, topics=None):
-    conn = sqlite3.connect(DB_PATH)
-    topics_str = ",".join(topics) if topics else ""
-    conn.execute(
-        "INSERT INTO chat_history (device_id, role, content, topics) VALUES (?, ?, ?, ?)",
-        (device_id, role, content, topics_str)
-    )
-    conn.commit()
-    conn.close()
-
-def update_knowledge(device_id, topics):
-    conn = sqlite3.connect(DB_PATH)
-    for topic in topics:
-        conn.execute("""
-            INSERT INTO knowledge_state (device_id, topic, familiarity, question_count, last_asked)
-            VALUES (?, ?, 1, 1, CURRENT_TIMESTAMP)
-            ON CONFLICT(device_id, topic) DO UPDATE SET
-                question_count = question_count + 1,
-                familiarity = MIN(5, familiarity + 1),
-                last_asked = CURRENT_TIMESTAMP
-        """, (device_id, topic))
-    conn.commit()
-    conn.close()
-
-def get_user_profile(device_id):
-    """获取用户知识画像"""
-    conn = sqlite3.connect(DB_PATH)
-
-    # 知识状态
-    rows = conn.execute(
-        "SELECT topic, familiarity, question_count FROM knowledge_state WHERE device_id = ? ORDER BY last_asked DESC",
-        (device_id,)
-    ).fetchall()
-    knowledge = {row[0]: {"familiarity": row[1], "count": row[2]} for row in rows}
-
-    # 最近问题
-    recent = conn.execute(
-        "SELECT content, topics FROM chat_history WHERE device_id = ? AND role = 'user' ORDER BY created_at DESC LIMIT 5",
-        (device_id,)
-    ).fetchall()
-
-    # 总提问数
-    total_q = conn.execute(
-        "SELECT COUNT(*) FROM chat_history WHERE device_id = ? AND role = 'user'",
-        (device_id,)
-    ).fetchone()[0]
-
-    conn.close()
-    return {
-        "knowledge": knowledge,
-        "recent_questions": [r[0] for r in recent],
-        "total_questions": total_q
-    }
-
-def get_relevant_history(device_id, question, limit=3):
-    """找相关的历史问答，简单关键词匹配"""
-    conn = sqlite3.connect(DB_PATH)
-    topics = extract_topics(question)
-    if not topics:
-        conn.close()
-        return []
-
-    relevant = []
-    for topic in topics:
-        rows = conn.execute(
-            "SELECT role, content FROM chat_history WHERE device_id = ? AND topics LIKE ? ORDER BY created_at DESC LIMIT 3",
-            (device_id, f"%{topic}%")
-        ).fetchall()
-        for row in rows:
-            if row not in relevant:
-                relevant.append(row)
-    conn.close()
-    return relevant[:limit]
 
 # ========== 构建设备 ID ==========
 def get_device_id():
@@ -226,7 +103,7 @@ def build_personalized_context(device_id, question):
     """根据用户历史构建个性化上下文"""
     profile = get_user_profile(device_id)
     question_topics = extract_topics(question)
-    relevant_history = get_relevant_history(device_id, question)
+    relevant_history = get_relevant_history(device_id, question_topics)
 
     context_parts = []
 
@@ -400,17 +277,10 @@ if "messages" not in st.session_state:
 if "preset_clicked" not in st.session_state:
     st.session_state.preset_clicked = None
 if "db_loaded" not in st.session_state:
-    # 从数据库恢复聊天记录
-    device_id = st.session_state.device_id
-    get_or_create_user(device_id)
-    conn = sqlite3.connect(DB_PATH)
-    rows = conn.execute(
-        "SELECT role, content FROM chat_history WHERE device_id = ? ORDER BY id ASC",
-        (device_id,)
-    ).fetchall()
-    conn.close()
-    if rows:
-        st.session_state.messages = [{"role": r[0], "content": r[1]} for r in rows]
+    get_or_create_user(st.session_state.device_id)
+    saved = restore_messages(st.session_state.device_id)
+    if saved:
+        st.session_state.messages = saved
     st.session_state.db_loaded = True
 
 # ========== 设备 ID ==========
@@ -685,11 +555,7 @@ with st.sidebar:
 
     st.markdown("---")
     if st.button("🗑️ 清空数据", use_container_width=True):
-        conn = sqlite3.connect(DB_PATH)
-        conn.execute("DELETE FROM chat_history WHERE device_id = ?", (device_id,))
-        conn.execute("DELETE FROM knowledge_state WHERE device_id = ?", (device_id,))
-        conn.commit()
-        conn.close()
+        clear_user_data(device_id)
         st.session_state.messages = []
         st.rerun()
 
