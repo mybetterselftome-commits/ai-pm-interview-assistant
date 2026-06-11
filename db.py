@@ -4,11 +4,18 @@ import os
 DATABASE_URL = os.getenv("DATABASE_URL")
 DB_PATH = os.path.join(os.path.dirname(__file__), "knowledge.db")
 
-
 # ── Connection ──────────────────────────────────────────────────────
 if DATABASE_URL:
-    import psycopg2
-    import psycopg2.extras
+    try:
+        import psycopg2
+        import psycopg2.extras
+        USE_POSTGRES = True
+    except ImportError:
+        USE_POSTGRES = False
+else:
+    USE_POSTGRES = False
+
+if USE_POSTGRES:
 
     def _conn():
         return psycopg2.connect(DATABASE_URL)
