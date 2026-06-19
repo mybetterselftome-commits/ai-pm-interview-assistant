@@ -66,3 +66,4 @@ print(f"{a} ÷ {b} 取整数 = {a // b}")
 print(f"{a} ÷ {b} 余数 = {a % b}")
 
 print("\n🎉 恭喜！你完成了第一个 Python 程序！")
+import this

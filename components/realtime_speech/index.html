@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <script>
+    window.Streamlit = {
+      setComponentReady: function() {
+        window.parent.postMessage({ isStreamlitMessage: true, type: "streamlit:componentReady", apiVersion: 1 }, "*");
+      },
+      setFrameHeight: function(height) {
+        window.parent.postMessage({ isStreamlitMessage: true, type: "streamlit:setFrameHeight", height: height }, "*");
+      },
+      setComponentValue: function(value) {
+        window.parent.postMessage({ isStreamlitMessage: true, type: "streamlit:setComponentValue", value: value, dataType: "json" }, "*");
+      }
+    };
+  </script>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #111827;
+      background: transparent;
+    }
+    .bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      background: #fff;
+      padding: 10px 12px;
+      box-shadow: 0 3px 10px rgba(15, 23, 42, .03);
+    }
+    .left {
+      min-width: 0;
+      flex: 1;
+    }
+    .title {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 13px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #9ca3af;
+      flex: 0 0 auto;
+    }
+    .dot.live {
+      background: #ef4444;
+      box-shadow: 0 0 0 5px rgba(239, 68, 68, .13);
+    }
+    .hint {
+      color: #6b7280;
+      font-size: 12px;
+      margin-top: 4px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .metrics {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #6b7280;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 0 0 auto;
+    }
+    button {
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      background: #fff;
+      color: #111827;
+      padding: 8px 12px;
+      font-weight: 750;
+      cursor: pointer;
+      transition: all .15s;
+      white-space: nowrap;
+    }
+    button:hover { border-color: #6366f1; box-shadow: 0 3px 10px rgba(99,102,241,.13); }
+    button.primary { background: #6366f1; border-color: #6366f1; color: #fff; }
+    button.danger { color: #b91c1c; background: #fff5f5; border-color: #fecaca; }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+    @media (max-width: 760px) {
+      .bar { flex-direction: column; align-items: stretch; }
+      .actions { width: 100%; }
+      button { flex: 1; }
+      .metrics { justify-content: space-between; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bar">
+    <div class="left">
+      <div class="title"><span id="dot" class="dot"></span><span id="statusText">实时语音写入回答框</span></div>
+      <div id="hint" class="hint">点击开始后直接说话，文字会边说边写入下方回答框。停顿超过 2 秒计为明显停顿。</div>
+    </div>
+    <div class="metrics">
+      <span id="duration">0s</span>
+      <span>停顿 <b id="pauseCount">0</b> 次</span>
+      <span>最长 <b id="maxPause">0.0s</b></span>
+    </div>
+    <div class="actions">
+      <button id="start" class="primary">开始回答</button>
+      <button id="stop">停止</button>
+      <button id="clear" class="danger">清空</button>
+    </div>
+  </div>
+
+  <script>
+    const Streamlit = window.Streamlit;
+    Streamlit.setComponentReady();
+    Streamlit.setFrameHeight(72);
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const startBtn = document.getElementById('start');
+    const stopBtn = document.getElementById('stop');
+    const clearBtn = document.getElementById('clear');
+    const statusText = document.getElementById('statusText');
+    const hint = document.getElementById('hint');
+    const dot = document.getElementById('dot');
+    const durationEl = document.getElementById('duration');
+    const pauseCountEl = document.getElementById('pauseCount');
+    const maxPauseEl = document.getElementById('maxPause');
+
+    let recognition = null;
+    let finalTranscript = '';
+    let interimTranscript = '';
+    let isRecording = false;
+    let startTime = null;
+    let timer = null;
+    let lastSpeechAt = null;
+    let pauseCount = 0;
+    let maxPauseMs = 0;
+    let lastPauseBucket = 0;
+
+    function seconds(ms) { return (ms / 1000).toFixed(1) + 's'; }
+
+    function getTextarea() {
+      try {
+        const doc = window.parent.document;
+        return doc.querySelector('textarea[aria-label="回答内容"]') || doc.querySelector('textarea');
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function writeToTextarea(text) {
+      const textarea = getTextarea();
+      if (!textarea) return;
+      textarea.value = text;
+      textarea.dispatchEvent(new Event('input', { bubbles: true }));
+      textarea.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    function currentText() {
+      return (finalTranscript + (interimTranscript ? '\n' + interimTranscript : '')).trim();
+    }
+
+    function payload() {
+      return {
+        transcript: finalTranscript.trim(),
+        interim: interimTranscript.trim(),
+        is_recording: isRecording,
+        duration_ms: startTime ? Date.now() - startTime : 0,
+        pause_count: pauseCount,
+        max_pause_ms: maxPauseMs,
+        updated_at: Date.now()
+      };
+    }
+
+    function sendValue() {
+      Streamlit.setComponentValue(payload());
+    }
+
+    function render() {
+      writeToTextarea(currentText());
+    }
+
+    function resetMetrics() {
+      finalTranscript = '';
+      interimTranscript = '';
+      startTime = null;
+      lastSpeechAt = null;
+      pauseCount = 0;
+      maxPauseMs = 0;
+      lastPauseBucket = 0;
+      durationEl.textContent = '0s';
+      pauseCountEl.textContent = '0';
+      maxPauseEl.textContent = '0.0s';
+      render();
+    }
+
+    function tick() {
+      if (!isRecording || !startTime) return;
+      const now = Date.now();
+      durationEl.textContent = Math.floor((now - startTime) / 1000) + 's';
+      if (lastSpeechAt) {
+        const pause = now - lastSpeechAt;
+        if (pause > 2000) {
+          maxPauseMs = Math.max(maxPauseMs, pause);
+          const bucket = Math.floor(pause / 2000);
+          if (bucket > lastPauseBucket) {
+            pauseCount += 1;
+            lastPauseBucket = bucket;
+          }
+          pauseCountEl.textContent = pauseCount;
+          maxPauseEl.textContent = seconds(maxPauseMs);
+        }
+      }
+      render();
+    }
+
+    if (!SpeechRecognition) {
+      statusText.textContent = '当前浏览器不支持实时语音识别';
+      hint.textContent = '建议使用 Chrome 或 Edge，并允许麦克风权限。';
+      startBtn.disabled = true;
+      stopBtn.disabled = true;
+    } else {
+      recognition = new SpeechRecognition();
+      recognition.lang = 'zh-CN';
+      recognition.continuous = true;
+      recognition.interimResults = true;
+
+      recognition.onstart = () => {
+        isRecording = true;
+        startTime = Date.now();
+        lastSpeechAt = Date.now();
+        statusText.textContent = '正在实时写入回答框...';
+        hint.textContent = '请像真实面试一样完整回答，停止后系统会同步最终文本。';
+        dot.classList.add('live');
+        timer = setInterval(tick, 500);
+        render();
+      };
+
+      recognition.onresult = (event) => {
+        interimTranscript = '';
+        lastSpeechAt = Date.now();
+        lastPauseBucket = 0;
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const text = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += text + '\n';
+          } else {
+            interimTranscript += text;
+          }
+        }
+        render();
+      };
+
+      recognition.onerror = (event) => {
+        isRecording = false;
+        dot.classList.remove('live');
+        statusText.textContent = '识别异常：' + event.error;
+        if (timer) clearInterval(timer);
+        sendValue();
+      };
+
+      recognition.onend = () => {
+        isRecording = false;
+        dot.classList.remove('live');
+        statusText.textContent = finalTranscript.trim() ? '已停止，结果已同步到回答框' : '已停止';
+        hint.textContent = '可以继续编辑回答，或直接提交 Rubric 复盘。';
+        if (timer) clearInterval(timer);
+        interimTranscript = '';
+        render();
+        sendValue();
+      };
+    }
+
+    startBtn.onclick = () => {
+      if (!recognition || isRecording) return;
+      try {
+        recognition.start();
+      } catch (e) {
+        statusText.textContent = '无法开始录音，请稍后重试';
+      }
+    };
+
+    stopBtn.onclick = () => {
+      if (recognition && isRecording) recognition.stop();
+    };
+
+    clearBtn.onclick = () => {
+      if (recognition && isRecording) recognition.stop();
+      isRecording = false;
+      dot.classList.remove('live');
+      statusText.textContent = '已清空';
+      hint.textContent = '点击开始后直接说话，文字会边说边写入下方回答框。';
+      if (timer) clearInterval(timer);
+      resetMetrics();
+      sendValue();
+    };
+  </script>
+</body>
+</html>

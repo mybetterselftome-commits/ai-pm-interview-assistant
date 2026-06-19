@@ -1,0 +1,25 @@
+print("Hello World!")
+print("你好，世界！")
+# 字符串（文字）
+name = "小明"
+print(name)
+# 数字
+age = 25
+print(age)
+# 小数
+height = 1.75
+print(height)
+# 示例：新建文件 demo.py，写这些来练习
+name = "小明"
+age = 25
+print(f"我叫{name}，今年{age}岁")
+
+# 列表、循环、函数
+numbers = [1, 2, 3, 4, 5]
+for n in numbers:
+    print(n * 2)
+message = "Hello, World!"
+print(message.upper())
+def greet(name):
+    return f"Hello, {name}!"
+print(greet("Alice"))
