@@ -26,7 +26,11 @@ from db import (
     save_interview_session,
     list_interview_sessions,
 )
-from prompts import profile_prompt, jd_prompt, interview_prompt, knowledge_prompt, agent_prompt
+from prompts.profile_prompt import profile_prompt
+from prompts.jd_prompt import jd_prompt
+from prompts.interview_prompt import interview_prompt
+from prompts.knowledge_prompt import knowledge_prompt
+from prompts.agent_prompt import agent_prompt
 
 # ========== 绕过系统代理 ==========
 for key in ["HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy", "ALL_PROXY", "all_proxy"]:
