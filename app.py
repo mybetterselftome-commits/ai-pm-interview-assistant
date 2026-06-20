@@ -652,9 +652,8 @@ nav_items = [
     ("JD解码", "01", "看懂岗位背后的证据要求"),
     ("经历转译", "02", "把过往经历翻译成能力证据"),
     ("作品集规划", "03", "补齐 AI 项目证据"),
-    ("面试证据化训练", "04", "把回答从笔记变成证明"),
-    ("知识掌握度", "05", "测到面试可用深度"),
-    ("补强闭环/我的资产", "06", "沉淀资产并生成下一步"),
+    ("面试训练", "04", "证据化复盘 + 知识掌握度"),
+    ("补强闭环/我的资产", "05", "沉淀资产并生成下一步"),
 ]
 nav_cols = st.columns(len(nav_items))
 for col, (section, num, text) in zip(nav_cols, nav_items):
@@ -798,14 +797,14 @@ elif st.session_state.active_section == "作品集规划":
         "AI PM 作品集证据方案",
         "作品集规划",
         "portfolio",
-        next_section="面试证据化训练",
+        next_section="面试训练",
         next_label="下一步：验证我的回答能不能扛追问",
     )
 
-# ========== 模块 4：面试证据化训练 ==========
-elif st.session_state.active_section == "面试证据化训练":
-    st.markdown('<div class="section-title">面试证据化训练：把回答从学习笔记变成岗位证明</div>', unsafe_allow_html=True)
-    st.markdown('<div class="subtle-note">单轮模式检查回答有没有证据、指标、边界和取舍；多轮模式由 AI 面试官连续追问到证据断点。</div>', unsafe_allow_html=True)
+# ========== 模块 4：面试训练 ==========
+elif st.session_state.active_section == "面试训练":
+    st.markdown('<div class="section-title">面试训练：证据化复盘 + 知识掌握度</div>', unsafe_allow_html=True)
+    st.markdown('<div class="subtle-note">把「回答像学习笔记」的问题拆成两部分：先用证据化复盘检查回答，再用知识掌握度补齐 RAG、Agent、评估等短板。</div>', unsafe_allow_html=True)
 
     if st.session_state.weakness_tags:
         focus_tags = "、".join(f"{t['tag']}（{t['dimension']}）" for t in st.session_state.weakness_tags[:5])
@@ -901,7 +900,7 @@ elif st.session_state.active_section == "面试证据化训练":
                     if saved:
                         st.toast(f"已抽取并写入 {saved} 个能力短板标签到你的画像")
 
-        render_result(st.session_state.interview_review, "面试证据复盘", "模拟面试证据化复盘", "面试证据化训练", "interview", next_section="知识掌握度", next_label="下一步：补强暴露出的薄弱知识点")
+        render_result(st.session_state.interview_review, "面试证据复盘", "模拟面试证据化复盘", "面试训练", "interview", next_section="面试训练", next_label="下一步：继续做知识掌握度自测")
 
     else:
         st.session_state.agent_role = st.selectbox("选择模拟岗位", list(INTERVIEW_QUESTIONS.keys()), key="agent_role_select")
@@ -1010,16 +1009,15 @@ elif st.session_state.active_section == "面试证据化训练":
                     f"抗追问面试复盘 · {agent_role}",
                     "多轮面试",
                     "agent_review",
-                    next_section="知识掌握度",
+                    next_section="面试训练",
                     next_label="下一步：根据破绽地图补强知识掌握度",
                 )
         else:
             st.caption("点击「开始一场抗追问面试」启动 AI 面试官。系统会基于你的画像、作品集和历史短板自动选题并连续追问。")
 
-# ========== 模块 5：知识掌握度 ==========
-elif st.session_state.active_section == "知识掌握度":
+    st.markdown("---")
     st.markdown('<div class="section-title">知识掌握度：测到面试可用、产品可用、抗追问可用</div>', unsafe_allow_html=True)
-    st.markdown('<div class="subtle-note">保留知识库解释，同时新增掌握度自测：不是问 RAG 是什么，而是判断你能不能讲场景、边界、指标和取舍。</div>', unsafe_allow_html=True)
+    st.markdown('<div class="subtle-note">这里合并在「面试训练」里：知识查询、自测和 7 天补强计划都服务于面试追问防守。</div>', unsafe_allow_html=True)
 
     tab_query, tab_mastery, tab_plan = st.tabs(["知识查询", "掌握度自测", "7 天补强计划"])
 
@@ -1130,7 +1128,7 @@ elif st.session_state.active_section == "补强闭环/我的资产":
     st.markdown("---")
     st.markdown('<div class="section-title">我的求职证据资产库</div>', unsafe_allow_html=True)
     if not st.session_state.assets:
-        st.info("还没有保存资产。先完成 JD 解码、经历转译、作品集规划或面试证据化训练，然后点击“保存为资产”。")
+        st.info("还没有保存资产。先完成 JD 解码、经历转译、作品集规划或面试训练，然后点击“保存为资产”。")
     else:
         export_text = "# AI PM 求职证据资产\n\n"
         for asset in st.session_state.assets:
@@ -1184,7 +1182,7 @@ elif st.session_state.active_section == "补强闭环/我的资产":
     st.markdown('<div class="section-title">能力短板地图（数据飞轮）</div>', unsafe_allow_html=True)
     st.caption("每次面试复盘后，系统会自动抽取你的能力短板标签并合并到这里。下次抽题、追问、知识掌握度和补强闭环都会引用这些标签。")
     if not st.session_state.weakness_tags:
-        st.caption("还没有短板记录。先去做一次面试证据化训练，系统会自动写入。")
+        st.caption("还没有短板记录。先去做一次面试训练，系统会自动写入。")
     else:
         for tag in st.session_state.weakness_tags:
             severity_dot = "🔴" if tag["severity"] >= 3 else ("🟡" if tag["severity"] == 2 else "🟢")

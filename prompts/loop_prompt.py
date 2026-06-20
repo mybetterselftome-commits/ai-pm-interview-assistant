@@ -72,7 +72,7 @@ def build_user_prompt(assets_summary, weakness_tags, feedback_summary, target_go
 
 ## 6. 下一步推荐路径
 请明确告诉用户下一步应该点击哪个模块：
-- JD解码 / 经历转译 / 作品集规划 / 面试证据化训练 / 知识掌握度 / 补强闭环/我的资产
+- JD解码 / 经历转译 / 作品集规划 / 面试训练 / 补强闭环/我的资产
 - 推荐原因：
 - 进入该模块前需要准备什么输入：
 
