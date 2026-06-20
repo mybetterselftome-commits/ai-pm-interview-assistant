@@ -803,8 +803,14 @@ elif st.session_state.active_section == "作品集规划":
 
 # ========== 模块 4：面试训练 ==========
 elif st.session_state.active_section == "面试训练":
-    st.markdown('<div class="section-title">面试训练：证据化复盘 + 知识掌握度</div>', unsafe_allow_html=True)
-    st.markdown('<div class="subtle-note">把「回答像学习笔记」的问题拆成两部分：先用证据化复盘检查回答，再用知识掌握度补齐 RAG、Agent、评估等短板。</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">面试训练：把回答从学习笔记改成岗位证明</div>', unsafe_allow_html=True)
+    st.markdown('<div class="subtle-note">这个模块不是泛泛打分，而是固定输出：原回答评分、为什么不像岗位证明、缺少的产品证据、改写版回答、追问防守。</div>', unsafe_allow_html=True)
+    st.markdown("""
+    <div class="kb-card">
+        <h4>本模块会输出什么？</h4>
+        <p>① 原回答评分 · ② 原回答为什么不像岗位证明 · ③ 缺少的产品证据 · ④ 改写版回答 · ⑤ 追问防守</p>
+    </div>
+    """, unsafe_allow_html=True)
 
     if st.session_state.weakness_tags:
         focus_tags = "、".join(f"{t['tag']}（{t['dimension']}）" for t in st.session_state.weakness_tags[:5])
