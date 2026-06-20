@@ -62,7 +62,7 @@ st.set_page_config(
     page_title="AI PM 求职证据工作台",
     page_icon="🎯",
     layout="wide",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="expanded",
     menu_items={
         "Get Help": None,
         "Report a bug": None,
@@ -79,9 +79,11 @@ st.markdown("""
 <style>
     [data-testid="stHeader"] { display: none; }
     [data-testid="stToolbar"] { display: none; }
-    [data-testid="stSidebar"] { display: none; }
-    [data-testid="collapsedControl"] { display: none; }
     footer { display: none; }
+    [data-testid="stSidebar"] {
+        background: #ffffff;
+        border-right: 1px solid #e5e7eb;
+    }
 
     .stApp { background: #f7f8fb; color: #111827; }
     .main .block-container {
@@ -635,33 +637,33 @@ st.markdown("""
 </div>
 <div class="workspace-header">
     <h1>把 JD、经历、作品集和面试回答，转化成 AI PM 岗位认可的能力证据</h1>
-    <p>不是帮你写漂亮话，而是把岗位要求拆成证据标准，把过往经历转译成可验证能力，用作品集补证，再通过面试追问和知识掌握度形成补强闭环。</p>
-</div>
-""", unsafe_allow_html=True)
-
-st.markdown(f"""
-<div class="asset-strip">
-    <div class="asset-stat"><div class="num">{asset_count_any(['JD证据地图', 'JD 匹配报告'])}</div><div class="label">JD 证据地图</div></div>
-    <div class="asset-stat"><div class="num">{asset_count_any(['经历证据转译', '求职画像'])}</div><div class="label">经历转译</div></div>
-    <div class="asset-stat"><div class="num">{asset_count_any(['作品集规划'])}</div><div class="label">作品集方案</div></div>
-    <div class="asset-stat"><div class="num">{len(st.session_state.weakness_tags)}</div><div class="label">短板闭环</div></div>
+    <p>不是帮你写漂亮话，而是把岗位要求拆成证据标准，把过往经历转译成可验证能力，用作品集补证，再通过面试训练和补强闭环沉淀成求职资产。</p>
 </div>
 """, unsafe_allow_html=True)
 
 nav_items = [
-    ("JD解码", "01", "看懂岗位背后的证据要求"),
-    ("经历转译", "02", "把过往经历翻译成能力证据"),
-    ("作品集规划", "03", "补齐 AI 项目证据"),
-    ("面试训练", "04", "证据化复盘 + 知识掌握度"),
-    ("补强闭环/我的资产", "05", "沉淀资产并生成下一步"),
+    ("JD解码", "01", "看懂岗位要求"),
+    ("经历转译", "02", "找到可用证据"),
+    ("作品集规划", "03", "补项目证据"),
+    ("面试训练", "04", "改成岗位证明"),
+    ("补强闭环/我的资产", "05", "沉淀下一步"),
 ]
-nav_cols = st.columns(len(nav_items))
-for col, (section, num, text) in zip(nav_cols, nav_items):
-    with col:
-        st.markdown('<div class="nav-card">', unsafe_allow_html=True)
-        if st.button(f"{num}\n\n{section}\n{text}", key=f"nav_{section}", use_container_width=True):
+
+with st.sidebar:
+    st.markdown("### 求职证据流程")
+    st.caption("按顺序推进，也可以随时跳转。")
+    for section, num, text in nav_items:
+        active_mark = "● " if st.session_state.active_section == section else ""
+        if st.button(f"{active_mark}{num} {section}\n{text}", key=f"nav_{section}", use_container_width=True):
             st.session_state.active_section = section
-        st.markdown('</div>', unsafe_allow_html=True)
+            st.rerun()
+
+    st.markdown("---")
+    st.markdown("### 资产状态")
+    st.metric("JD 证据地图", asset_count_any(['JD证据地图', 'JD 匹配报告']))
+    st.metric("经历转译", asset_count_any(['经历证据转译', '求职画像']))
+    st.metric("作品集方案", asset_count_any(['作品集规划']))
+    st.metric("短板闭环", len(st.session_state.weakness_tags))
 
 st.markdown("---")
 
