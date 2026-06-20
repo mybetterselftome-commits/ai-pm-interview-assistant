@@ -146,12 +146,27 @@
     let maxPauseMs = 0;
     let lastPauseBucket = 0;
 
+    let targetLabel = '回答内容';
+
+    window.addEventListener('message', (event) => {
+      const data = event.data || {};
+      if (data.type === 'streamlit:render') {
+        const args = data.args || {};
+        if (args.target_label) targetLabel = args.target_label;
+        if (args.title) statusText.textContent = args.title;
+        if (args.hint) hint.textContent = args.hint;
+      }
+    });
+
     function seconds(ms) { return (ms / 1000).toFixed(1) + 's'; }
 
     function getTextarea() {
       try {
         const doc = window.parent.document;
-        return doc.querySelector('textarea[aria-label="回答内容"]') || doc.querySelector('textarea');
+        const escaped = targetLabel.replace(/"/g, '\\"');
+        return doc.querySelector(`textarea[aria-label="${escaped}"]`) ||
+               doc.querySelector('textarea[aria-label="回答内容"]') ||
+               doc.querySelector('textarea');
       } catch (e) {
         return null;
       }
@@ -272,7 +287,7 @@
         isRecording = false;
         dot.classList.remove('live');
         statusText.textContent = finalTranscript.trim() ? '已停止，结果已同步到回答框' : '已停止';
-        hint.textContent = '可以继续编辑回答，或直接提交 Rubric 复盘。';
+        hint.textContent = '可以继续编辑文字，或直接提交分析。';
         if (timer) clearInterval(timer);
         interimTranscript = '';
         render();

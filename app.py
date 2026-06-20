@@ -866,6 +866,16 @@ elif st.session_state.active_section == "面试训练":
             st.markdown('<div class="voice-row"><div class="title">输入你的回答</div><div class="hint">提交后系统会拆解你的回答主张，判断每个主张是否有真实经历、项目、指标或作品集证据支撑。</div></div>', unsafe_allow_html=True)
 
             answer = st.text_area("回答内容", key="interview_answer", height=190, label_visibility="collapsed")
+            voice_payload = realtime_speech(
+                target_label="回答内容",
+                title="实时语音写入回答框",
+                hint="点击开始后直接说话，文字会边说边写入上方回答框。停止后再提交复盘。",
+                key="voice_interview_answer",
+            )
+            if isinstance(voice_payload, dict):
+                st.session_state.voice_metrics = voice_payload
+                if voice_payload.get("transcript"):
+                    st.session_state.last_voice_transcript = voice_payload.get("transcript", "")
             review_submitted = st.button("提交证据化复盘", type="primary", use_container_width=True)
 
             if review_submitted:
@@ -1025,11 +1035,18 @@ elif st.session_state.active_section == "面试训练":
     st.markdown('<div class="section-title">面试知识补强：只保留掌握度自测</div>', unsafe_allow_html=True)
     st.markdown('<div class="subtle-note">这里不再做大面积知识库展示，只判断一个知识点是否达到面试可用、产品可用、抗追问可用的深度。</div>', unsafe_allow_html=True)
 
-    with st.form("mastery_form"):
-        topic = st.text_input("要自测的知识点", key="mastery_topic", placeholder="例如：RAG、Agent、模型评估、Prompt 工程")
-        target_role = st.selectbox("目标岗位方向", list(CAREER_PATHS.keys()), key="mastery_target_role")
-        user_explanation = st.text_area("先用你自己的话解释这个知识点", key="mastery_explanation", height=150, placeholder="不要复制定义，按你面试时会怎么说来写。")
-        mastery_submitted = st.form_submit_button("评估掌握度", type="primary", use_container_width=True)
+    topic = st.text_input("要自测的知识点", key="mastery_topic", placeholder="例如：RAG、Agent、模型评估、Prompt 工程")
+    target_role = st.selectbox("目标岗位方向", list(CAREER_PATHS.keys()), key="mastery_target_role")
+    user_explanation = st.text_area("先用你自己的话解释这个知识点", key="mastery_explanation", height=150, placeholder="不要复制定义，按你面试时会怎么说来写。")
+    mastery_voice = realtime_speech(
+        target_label="先用你自己的话解释这个知识点",
+        title="实时语音写入自测解释",
+        hint="点击开始后直接解释这个知识点，文字会边说边写入上方输入框。",
+        key="voice_mastery_explanation",
+    )
+    if isinstance(mastery_voice, dict):
+        st.session_state.voice_metrics = mastery_voice
+    mastery_submitted = st.button("评估掌握度", type="primary", use_container_width=True)
     if mastery_submitted:
         if len(user_explanation.strip()) < 20:
             st.warning("请先用自己的话解释，至少写 20 字。")
