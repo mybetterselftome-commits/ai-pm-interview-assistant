@@ -1022,83 +1022,26 @@ elif st.session_state.active_section == "面试训练":
             st.caption("点击「开始一场抗追问面试」启动 AI 面试官。系统会基于你的画像、作品集和历史短板自动选题并连续追问。")
 
     st.markdown("---")
-    st.markdown('<div class="section-title">知识掌握度：测到面试可用、产品可用、抗追问可用</div>', unsafe_allow_html=True)
-    st.markdown('<div class="subtle-note">这里合并在「面试训练」里：知识查询、自测和 7 天补强计划都服务于面试追问防守。</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">面试知识补强：只保留掌握度自测</div>', unsafe_allow_html=True)
+    st.markdown('<div class="subtle-note">这里不再做大面积知识库展示，只判断一个知识点是否达到面试可用、产品可用、抗追问可用的深度。</div>', unsafe_allow_html=True)
 
-    tab_query, tab_mastery, tab_plan = st.tabs(["知识查询", "掌握度自测", "7 天补强计划"])
-
-    with tab_query:
-        search_question = st.text_input("搜索或提问", key="kb_search")
-        if st.button("查询知识库", type="primary", use_container_width=True):
-            if not search_question.strip():
-                st.warning("请输入一个具体问题，例如：RAG 怎么讲给面试官听？")
-            else:
-                base_prompt = knowledge_prompt.build_knowledge_prompt(search_question)
-                if st.session_state.weakness_tags:
-                    prompt = base_prompt + f"\n\n## 用户当前能力短板（请据此调整解释深度，弱的地方多展开、强的地方略过）\n{weakness_context()}\n"
-                else:
-                    prompt = base_prompt
-                st.session_state.kb_result = call_ai_with_progress(
-                    knowledge_prompt.KNOWLEDGE_SYSTEM_PROMPT,
-                    prompt,
-                    title=f"查询知识库 · {knowledge_prompt.KNOWLEDGE_PROMPT_VERSION}",
-                    steps=["理解问题", "匹配知识点", "组织面试表达", "整理追问模板"],
-                )
-
-        render_result(st.session_state.kb_result, "知识掌握卡", "AI 产品求职知识掌握卡", "知识掌握度", "kb", next_section="补强闭环/我的资产", next_label="下一步：查看并导出我的求职资产")
-
-        st.markdown("---")
-        for category, info in KNOWLEDGE_BASE.items():
-            st.markdown(f'<div class="kb-card"><h4>{category}</h4><p>{info["说明"]}</p></div>', unsafe_allow_html=True)
-            cols = st.columns(4)
-            for index, topic in enumerate(info["知识点"]):
-                with cols[index % 4]:
-                    if st.button(topic, key=f"kb_{category}_{topic}", use_container_width=True):
-                        base_prompt = knowledge_prompt.build_topic_prompt(topic)
-                        if st.session_state.weakness_tags:
-                            prompt = base_prompt + f"\n\n## 用户当前能力短板（请在抗追问版回答中重点对应）\n{weakness_context(5)}\n"
-                        else:
-                            prompt = base_prompt
-                        st.session_state.kb_result = call_ai_with_progress(
-                            knowledge_prompt.TOPIC_SYSTEM_PROMPT,
-                            prompt,
-                            title=f"学习 {topic} · {knowledge_prompt.KNOWLEDGE_PROMPT_VERSION}",
-                            steps=["读取知识点", "补充产品案例", "生成回答模板", "整理常见追问"],
-                        )
-                        st.rerun()
-
-    with tab_mastery:
-        with st.form("mastery_form"):
-            topic = st.text_input("要自测的知识点", key="mastery_topic")
-            target_role = st.selectbox("目标岗位方向", list(CAREER_PATHS.keys()), key="mastery_target_role")
-            user_explanation = st.text_area("先用你自己的话解释这个知识点", key="mastery_explanation", height=150)
-            mastery_submitted = st.form_submit_button("评估掌握度", type="primary", use_container_width=True)
-        if mastery_submitted:
-            if len(user_explanation.strip()) < 20:
-                st.warning("请先用自己的话解释，至少写 20 字。")
-            else:
-                prompt = knowledge_prompt.build_mastery_prompt(topic, user_explanation, target_role, weakness_context())
-                st.session_state.mastery_result = call_ai_with_progress(
-                    knowledge_prompt.MASTERY_SYSTEM_PROMPT,
-                    prompt,
-                    title=f"评估掌握度 · {knowledge_prompt.MASTERY_PROMPT_VERSION}",
-                    steps=["读取你的解释", "按 Rubric 评分", "定位追问风险", "生成补强卡片"],
-                )
-        render_result(st.session_state.mastery_result, "知识掌握卡", f"{st.session_state.mastery_topic} 掌握度自测", "知识掌握度", "mastery", next_section="补强闭环/我的资产", next_label="下一步：生成补强闭环")
-
-    with tab_plan:
-        for path, topics in CAREER_PATHS.items():
-            with st.expander(path, expanded=False):
-                st.markdown("".join(f'<span class="path-tag">{topic}</span>' for topic in topics), unsafe_allow_html=True)
-                if st.button(f"生成《{path}》7 天补强计划", key=f"plan_{path}"):
-                    prompt = knowledge_prompt.build_plan_prompt(path, topics)
-                    st.session_state.kb_result = call_ai_with_progress(
-                        knowledge_prompt.PLAN_SYSTEM_PROMPT,
-                        prompt,
-                        title=f"生成补强计划 · {knowledge_prompt.PLAN_PROMPT_VERSION}",
-                        steps=["分析岗位方向", "拆解能力短板", "安排每日任务", "整理输出物"],
-                    )
-                    st.rerun()
+    with st.form("mastery_form"):
+        topic = st.text_input("要自测的知识点", key="mastery_topic", placeholder="例如：RAG、Agent、模型评估、Prompt 工程")
+        target_role = st.selectbox("目标岗位方向", list(CAREER_PATHS.keys()), key="mastery_target_role")
+        user_explanation = st.text_area("先用你自己的话解释这个知识点", key="mastery_explanation", height=150, placeholder="不要复制定义，按你面试时会怎么说来写。")
+        mastery_submitted = st.form_submit_button("评估掌握度", type="primary", use_container_width=True)
+    if mastery_submitted:
+        if len(user_explanation.strip()) < 20:
+            st.warning("请先用自己的话解释，至少写 20 字。")
+        else:
+            prompt = knowledge_prompt.build_mastery_prompt(topic, user_explanation, target_role, weakness_context())
+            st.session_state.mastery_result = call_ai_with_progress(
+                knowledge_prompt.MASTERY_SYSTEM_PROMPT,
+                prompt,
+                title=f"评估掌握度 · {knowledge_prompt.MASTERY_PROMPT_VERSION}",
+                steps=["读取你的解释", "按 Rubric 评分", "定位追问风险", "生成补强卡片"],
+            )
+    render_result(st.session_state.mastery_result, "知识掌握卡", f"{st.session_state.mastery_topic} 掌握度自测", "面试知识补强", "mastery", next_section="补强闭环/我的资产", next_label="下一步：生成补强闭环")
 
 # ========== 模块 6：补强闭环 / 我的资产 ==========
 elif st.session_state.active_section == "补强闭环/我的资产":
