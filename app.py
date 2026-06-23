@@ -716,34 +716,24 @@ if st.button(toggle_label, key="toggle_left_nav"):
     st.rerun()
 
 if st.session_state.show_left_nav:
-    left_col, main_col = st.columns([0.24, 0.76], gap="large")
+    left_col, main_col = st.columns([0.18, 0.82], gap="large")
     with left_col:
-        st.markdown("### 示例背景")
-        selected_example = st.selectbox("选择一个行业样例", list(EXAMPLES.keys()), key="selected_example")
-        if st.button("填入所选示例", key="fill_selected_example", use_container_width=True):
-            fill_example(selected_example)
-            st.rerun()
-
-        st.markdown("---")
-        st.markdown("### 求职证据流程")
-        st.caption("按顺序推进，也可以随时跳转。")
         for section, num, text in nav_items:
             active_mark = "● " if st.session_state.active_section == section else ""
-            if st.button(f"{active_mark}{num} {section}\n{text}", key=f"nav_{section}", use_container_width=True):
+            if st.button(f"{active_mark}{num} {section}", key=f"nav_{section}", use_container_width=True):
                 st.session_state.active_section = section
                 st.rerun()
-
-        st.markdown("---")
-        st.markdown("### 资产状态")
-        st.metric("JD 证据地图", asset_count_any(['JD证据地图', 'JD 匹配报告']))
-        st.metric("经历转译", asset_count_any(['经历证据转译', '求职画像']))
-        st.metric("作品集方案", asset_count_any(['作品集规划']))
-        st.metric("短板闭环", len(st.session_state.weakness_tags))
 else:
     main_col = st.container()
 
 with main_col:
     st.markdown("---")
+    with st.expander("选择示例背景", expanded=False):
+        selected_example = st.selectbox("选择一个行业样例", list(EXAMPLES.keys()), key="selected_example")
+        if st.button("填入所选示例", key="fill_selected_example", use_container_width=True):
+            fill_example(selected_example)
+            st.rerun()
+
 
     # ========== 模块 1：JD 解码 ==========
     if st.session_state.active_section == "JD解码":
