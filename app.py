@@ -77,8 +77,12 @@ realtime_speech = components.declare_component("realtime_speech", path=REALTIME_
 # ========== CSS ==========
 st.markdown("""
 <style>
-    [data-testid="stHeader"] { display: none; }
+    [data-testid="stHeader"] {
+        background: transparent;
+        height: 2.75rem;
+    }
     [data-testid="stToolbar"] { display: none; }
+    [data-testid="collapsedControl"] { display: flex !important; }
     footer { display: none; }
     [data-testid="stSidebar"] {
         background: #ffffff;
