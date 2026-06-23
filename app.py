@@ -679,6 +679,7 @@ def summarize_assets(limit=8):
 def fill_example(example_name=None):
     example_name = example_name or st.session_state.get("selected_example") or next(iter(EXAMPLES))
     example = EXAMPLES[example_name]
+    st.session_state.selected_example = example_name
     st.session_state.profile_background = example["background"]
     st.session_state.profile_project = example["project"]
     st.session_state.profile_confusion = example["confusion"]
@@ -689,6 +690,21 @@ def fill_example(example_name=None):
     st.session_state.kb_search = f"{example['mastery_topic']} 怎么讲给面试官听？"
     st.session_state.mastery_topic = example["mastery_topic"]
     st.session_state.mastery_explanation = example["mastery_explanation"]
+
+
+def render_example_buttons(key_prefix):
+    labels = [
+        ("填入示例1", "内容运营"),
+        ("填入示例2", "教育培训"),
+        ("填入示例3", "客服运营"),
+    ]
+    example_names = list(EXAMPLES.keys())
+    cols = st.columns(3)
+    for index, (button_label, short_label) in enumerate(labels):
+        with cols[index]:
+            if st.button(f"{button_label} · {short_label}", key=f"{key_prefix}_example_{index}", use_container_width=True):
+                fill_example(example_names[index])
+                st.rerun()
 
 # ========== 顶部 ==========
 st.markdown("""
@@ -728,21 +744,13 @@ else:
 
 with main_col:
     st.markdown("---")
-    with st.expander("选择示例背景", expanded=False):
-        selected_example = st.selectbox("选择一个行业样例", list(EXAMPLES.keys()), key="selected_example")
-        if st.button("填入所选示例", key="fill_selected_example", use_container_width=True):
-            fill_example(selected_example)
-            st.rerun()
-
 
     # ========== 模块 1：JD 解码 ==========
     if st.session_state.active_section == "JD解码":
         st.markdown('<div class="section-title">JD 解码：先看岗位到底要什么证据</div>', unsafe_allow_html=True)
         st.markdown('<div class="subtle-note">把 JD 原文拆成背后能力、证据标准、高风险追问和作品集可补证据。即使还没整理经历，也能先看懂岗位筛选逻辑。</div>', unsafe_allow_html=True)
 
-        if st.button("填入所选示例", key="jd_example"):
-            fill_example(st.session_state.selected_example)
-            st.rerun()
+        render_example_buttons("jd")
 
         with st.form("jd_decode_form"):
             jd_text = st.text_area("目标岗位 JD", key="jd_text", height=240)
@@ -777,9 +785,7 @@ with main_col:
         st.markdown('<div class="section-title">经历转译：把过往经历翻译成 AI PM 能力证据</div>', unsafe_allow_html=True)
         st.markdown('<div class="subtle-note">系统会引用 JD 证据地图，判断哪些经历能写进简历、能讲成面试故事、能支撑作品集，哪些不能过度包装。</div>', unsafe_allow_html=True)
 
-        if st.button("填入所选示例", key="profile_example"):
-            fill_example(st.session_state.selected_example)
-            st.rerun()
+        render_example_buttons("profile")
 
         if st.session_state.jd_result:
             st.caption("✅ 已检测到 JD 证据地图，本模块会自动引用前 1500 字作为岗位证据上下文。")
