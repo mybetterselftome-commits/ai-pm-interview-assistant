@@ -751,7 +751,13 @@ with main_col:
 
         with st.form("jd_decode_form"):
             jd_text = st.text_area("目标岗位 JD", key="jd_text", height=240)
-            user_summary = st.text_area("可选：你的背景摘要（没有也可以先解码 JD）", key="jd_user_summary", height=100)
+            user_summary = st.text_area(
+                "可选：补充你的背景，系统会同时判断你和这份 JD 的匹配差距",
+                key="jd_user_summary",
+                height=120,
+                placeholder="可以简单写：你的行业/岗位经历、做过的项目、用过的 AI 工具、数据结果、想转的方向。\n例如：我有 2 年内容运营经验，做过公众号/短视频策划和社群转化，用过 ChatGPT/DeepSeek 做内容生成，但还没有完整 AI 产品项目。\n如果你还没整理背景，也可以先留空，系统会先单独解码 JD。",
+                help="这里不是必填。填写后，系统不仅会解码 JD，还会初步判断你已有经历能证明什么、还缺哪些岗位证据。",
+            )
             jd_submitted = st.form_submit_button("生成 JD 证据地图", type="primary", use_container_width=True)
 
         if jd_submitted:
