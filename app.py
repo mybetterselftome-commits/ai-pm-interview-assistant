@@ -436,7 +436,7 @@ def call_ai_with_progress(system_prompt, user_prompt, title="正在生成", step
         time.sleep(0.25)
 
     progress.progress(62, text=f"{title}：模型正在生成结果... 62%")
-    status.caption("模型正在生成结果，这一步可能需要几秒钟。")
+    status.caption("模型正在生成结果，大约需要 60 秒，请稍等。")
     result = call_ai(system_prompt, user_prompt)
 
     progress.progress(88, text=f"{title}：整理输出结构... 88%")
