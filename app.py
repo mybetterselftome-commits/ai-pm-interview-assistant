@@ -62,7 +62,7 @@ st.set_page_config(
     page_title="AI PM 求职证据工作台",
     page_icon="🎯",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
     menu_items={
         "Get Help": None,
         "Report a bug": None,
@@ -418,6 +418,7 @@ def init_state():
         "profile_project": "",
         "profile_confusion": "",
         "selected_example": "内容运营转 AI 产品（你的背景）",
+        "show_left_nav": True,
         "jd_text": "",
         "jd_user_summary": "",
         "portfolio_goal": "",
@@ -709,536 +710,546 @@ nav_items = [
     ("补强闭环/我的资产", "05", "沉淀下一步"),
 ]
 
-with st.sidebar:
-    st.markdown("### 示例背景")
-    selected_example = st.selectbox("选择一个行业样例", list(EXAMPLES.keys()), key="selected_example")
-    if st.button("填入所选示例", key="fill_selected_example", use_container_width=True):
-        fill_example(selected_example)
-        st.rerun()
+toggle_label = "隐藏目录" if st.session_state.show_left_nav else "显示目录"
+if st.button(toggle_label, key="toggle_left_nav"):
+    st.session_state.show_left_nav = not st.session_state.show_left_nav
+    st.rerun()
 
-    st.markdown("---")
-    st.markdown("### 求职证据流程")
-    st.caption("按顺序推进，也可以随时跳转。")
-    for section, num, text in nav_items:
-        active_mark = "● " if st.session_state.active_section == section else ""
-        if st.button(f"{active_mark}{num} {section}\n{text}", key=f"nav_{section}", use_container_width=True):
-            st.session_state.active_section = section
+if st.session_state.show_left_nav:
+    left_col, main_col = st.columns([0.24, 0.76], gap="large")
+    with left_col:
+        st.markdown("### 示例背景")
+        selected_example = st.selectbox("选择一个行业样例", list(EXAMPLES.keys()), key="selected_example")
+        if st.button("填入所选示例", key="fill_selected_example", use_container_width=True):
+            fill_example(selected_example)
             st.rerun()
 
-    st.markdown("---")
-    st.markdown("### 资产状态")
-    st.metric("JD 证据地图", asset_count_any(['JD证据地图', 'JD 匹配报告']))
-    st.metric("经历转译", asset_count_any(['经历证据转译', '求职画像']))
-    st.metric("作品集方案", asset_count_any(['作品集规划']))
-    st.metric("短板闭环", len(st.session_state.weakness_tags))
-
-st.markdown("---")
-
-# ========== 模块 1：JD 解码 ==========
-if st.session_state.active_section == "JD解码":
-    st.markdown('<div class="section-title">JD 解码：先看岗位到底要什么证据</div>', unsafe_allow_html=True)
-    st.markdown('<div class="subtle-note">把 JD 原文拆成背后能力、证据标准、高风险追问和作品集可补证据。即使还没整理经历，也能先看懂岗位筛选逻辑。</div>', unsafe_allow_html=True)
-
-    if st.button("填入所选示例", key="jd_example"):
-        fill_example(st.session_state.selected_example)
-        st.rerun()
-
-    with st.form("jd_decode_form"):
-        jd_text = st.text_area("目标岗位 JD", key="jd_text", height=240)
-        user_summary = st.text_area("可选：你的背景摘要（没有也可以先解码 JD）", key="jd_user_summary", height=100)
-        jd_submitted = st.form_submit_button("生成 JD 证据地图", type="primary", use_container_width=True)
-
-    if jd_submitted:
-        profile_context = user_summary or build_profile_context_for_agent() or "用户暂未提供背景，请先按通用 AI PM 候选人标准解码 JD，并标注哪些证据需要后续补充。"
-        if len(jd_text.strip()) < 80:
-            st.warning("请补充更完整的 JD。JD 建议包含岗位职责和任职要求。")
-        else:
-            prompt = jd_prompt.build_user_prompt(profile_context, jd_text)
-            st.session_state.jd_result = call_ai_with_progress(
-                jd_prompt.SYSTEM_PROMPT,
-                prompt,
-                title=f"生成 JD 证据地图 · {jd_prompt.PROMPT_VERSION}",
-                steps=["读取岗位要求", "拆解背后能力", "定义证据标准", "整理追问风险"],
-            )
-
-    render_result(
-        st.session_state.jd_result,
-        "JD证据地图",
-        "AI PM 岗位证据地图",
-        "JD解码",
-        "jd",
-        next_section="经历转译",
-        next_label="下一步：把我的经历转译成岗位证据",
-    )
-
-# ========== 模块 2：经历转译 ==========
-elif st.session_state.active_section == "经历转译":
-    st.markdown('<div class="section-title">经历转译：把过往经历翻译成 AI PM 能力证据</div>', unsafe_allow_html=True)
-    st.markdown('<div class="subtle-note">系统会引用 JD 证据地图，判断哪些经历能写进简历、能讲成面试故事、能支撑作品集，哪些不能过度包装。</div>', unsafe_allow_html=True)
-
-    if st.button("填入所选示例", key="profile_example"):
-        fill_example(st.session_state.selected_example)
-        st.rerun()
-
-    if st.session_state.jd_result:
-        st.caption("✅ 已检测到 JD 证据地图，本模块会自动引用前 1500 字作为岗位证据上下文。")
-    else:
-        st.caption("提示：可以先做 JD 解码；也可以直接转译经历，系统会按目标岗位方向处理。")
-
-    with st.form("profile_form"):
-        current_background = st.text_area("你的过往背景", key="profile_background", height=120)
-        target_role = st.selectbox("目标岗位方向", list(CAREER_PATHS.keys()), key="profile_target_role")
-        ai_level = st.select_slider("AI 基础水平", options=["完全小白", "了解概念", "用过 AI 工具", "做过 AI 项目", "能独立设计 AI 产品方案"], key="profile_ai_level")
-        product_experience = st.text_area("你已有的项目/产品/运营经历", key="profile_project", height=110)
-        biggest_confusion = st.text_input("当前最大困惑", key="profile_confusion")
-        submitted = st.form_submit_button("生成经历证据转译", type="primary", use_container_width=True)
-
-    if submitted:
-        if len(current_background.strip()) < 20 or len(product_experience.strip()) < 20:
-            st.warning("为了生成有价值的经历转译，请至少补充一段过往背景和一段项目/经历，建议包含职责、动作和结果。")
-        else:
-            prompt = profile_prompt.build_user_prompt(
-                current_background,
-                target_role,
-                ai_level,
-                product_experience,
-                biggest_confusion,
-                st.session_state.jd_result[:1500],
-            )
-            st.session_state.profile_result = call_ai_with_progress(
-                profile_prompt.SYSTEM_PROMPT,
-                prompt,
-                title=f"生成经历证据转译 · {profile_prompt.PROMPT_VERSION}",
-                steps=["读取个人背景", "提炼可迁移证据", "识别包装边界", "整理转译报告"],
-            )
-
-    render_result(
-        st.session_state.profile_result,
-        "经历证据转译",
-        "经历到 AI PM 能力证据转译报告",
-        "经历转译",
-        "profile",
-        next_section="作品集规划",
-        next_label="下一步：用作品集补齐缺失证据",
-    )
-
-# ========== 模块 3：作品集规划 ==========
-elif st.session_state.active_section == "作品集规划":
-    st.markdown('<div class="section-title">作品集规划：用一个可完成的项目补齐岗位证据</div>', unsafe_allow_html=True)
-    st.markdown('<div class="subtle-note">不是做大而全的 Demo，而是围绕 JD 缺口规划最小可行作品集：证明场景理解、AI 能力设计、指标、边界和面试讲法。</div>', unsafe_allow_html=True)
-
-    context_cols = st.columns(3)
-    context_cols[0].metric("JD 证据地图", "已生成" if st.session_state.jd_result else "未生成")
-    context_cols[1].metric("经历转译", "已生成" if st.session_state.profile_result else "未生成")
-    context_cols[2].metric("短板标签", len(st.session_state.weakness_tags))
-
-    with st.form("portfolio_form"):
-        target_role = st.selectbox("目标岗位方向", list(CAREER_PATHS.keys()), key="portfolio_target_role")
-        time_budget = st.selectbox("可投入时间", ["3 天", "7 天", "14 天", "30 天"], key="portfolio_time_budget")
-        tech_level = st.selectbox(
-            "技术实现水平",
-            ["只会用 AI 工具", "会简单 Streamlit / Python", "会 API 调用", "能做前后端原型", "已有完整项目经验"],
-            key="portfolio_tech_level",
-        )
-        portfolio_goal = st.text_area("你想证明的能力 / 想做的方向（可选）", key="portfolio_goal", height=100)
-        portfolio_submitted = st.form_submit_button("生成作品集证据方案", type="primary", use_container_width=True)
-
-    if portfolio_submitted:
-        prompt = portfolio_prompt.build_user_prompt(
-            st.session_state.jd_result[:1800],
-            st.session_state.profile_result[:1800],
-            weakness_context(),
-            target_role,
-            time_budget,
-            tech_level,
-            portfolio_goal,
-        )
-        st.session_state.portfolio_result = call_ai_with_progress(
-            portfolio_prompt.SYSTEM_PROMPT,
-            prompt,
-            title=f"生成作品集规划 · {portfolio_prompt.PROMPT_VERSION}",
-            steps=["读取岗位证据", "定位作品集主题", "设计 MVP 范围", "整理面试讲法"],
-        )
-
-    render_result(
-        st.session_state.portfolio_result,
-        "作品集规划",
-        "AI PM 作品集证据方案",
-        "作品集规划",
-        "portfolio",
-        next_section="面试训练",
-        next_label="下一步：验证我的回答能不能扛追问",
-    )
-
-# ========== 模块 4：面试训练 ==========
-elif st.session_state.active_section == "面试训练":
-    st.markdown('<div class="section-title">面试训练：把回答从学习笔记改成岗位证明</div>', unsafe_allow_html=True)
-    st.markdown('<div class="subtle-note">这个模块不是泛泛打分，而是固定输出：原回答评分、为什么不像岗位证明、缺少的产品证据、改写版回答、追问防守。</div>', unsafe_allow_html=True)
-    st.markdown("""
-    <div class="kb-card">
-        <h4>本模块会输出什么？</h4>
-        <p>① 原回答评分 · ② 原回答为什么不像岗位证明 · ③ 缺少的产品证据 · ④ 改写版回答 · ⑤ 追问防守</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    if st.session_state.weakness_tags:
-        focus_tags = "、".join(f"{t['tag']}（{t['dimension']}）" for t in st.session_state.weakness_tags[:5])
-        st.caption(f"📌 系统已记录的薄弱点（会用于个性化追问与抽题）：{focus_tags}")
-
-    mode_label = st.radio(
-        "训练模式",
-        ["single", "agent"],
-        format_func=lambda x: "单轮证据复盘" if x == "single" else "多轮抗追问 Agent",
-        horizontal=True,
-        key="interview_mode",
-    )
-
-    if mode_label == "single":
-        role = st.selectbox("选择模拟岗位", list(INTERVIEW_QUESTIONS.keys()), key="interview_role")
-        context_mode = st.selectbox(
-            "证据上下文",
-            ["不引用", "引用 JD 解码", "引用经历转译", "引用作品集规划", "引用全部上下文"],
-            key="interview_context_mode",
-        )
-        question_bank = INTERVIEW_QUESTIONS[role]
-
-        weak_dims = top_weak_dimensions(st.session_state.device_id, top_n=2)
-        if weak_dims:
-            st.caption(f"🎯 本次抽题将优先考察你的弱项维度：{', '.join(weak_dims)}")
-
-        col_a, col_b, col_c = st.columns([1, 1, 1])
-        with col_a:
-            if st.button("下一道面试题", type="primary", use_container_width=True):
-                ranked = sorted(
-                    enumerate(question_bank),
-                    key=lambda kv: -sum(1 for d in weak_dims if d.replace(" ", "") in kv[1].replace(" ", "")),
-                )
-                idx = ranked[st.session_state.interview_index % len(ranked)][0]
-                st.session_state.interview_question = question_bank[idx]
-                st.session_state.interview_index += 1
-                st.session_state.interview_review = ""
-        with col_b:
-            if st.button("填入示例回答", use_container_width=True):
-                if not st.session_state.interview_question:
-                    st.session_state.interview_question = question_bank[0]
-                st.session_state.interview_answer = EXAMPLE_ANSWER
+        st.markdown("---")
+        st.markdown("### 求职证据流程")
+        st.caption("按顺序推进，也可以随时跳转。")
+        for section, num, text in nav_items:
+            active_mark = "● " if st.session_state.active_section == section else ""
+            if st.button(f"{active_mark}{num} {section}\n{text}", key=f"nav_{section}", use_container_width=True):
+                st.session_state.active_section = section
                 st.rerun()
-        with col_c:
-            if st.button("清空本轮", use_container_width=True):
-                st.session_state.interview_question = ""
-                st.session_state.interview_review = ""
-                st.session_state.interview_answer = ""
-                st.session_state.voice_metrics = {}
 
-        if st.session_state.interview_question:
-            st.info(f"面试题：{st.session_state.interview_question}")
-            st.markdown('<div class="voice-row"><div class="title">输入你的回答</div><div class="hint">提交后系统会拆解你的回答主张，判断每个主张是否有真实经历、项目、指标或作品集证据支撑。</div></div>', unsafe_allow_html=True)
+        st.markdown("---")
+        st.markdown("### 资产状态")
+        st.metric("JD 证据地图", asset_count_any(['JD证据地图', 'JD 匹配报告']))
+        st.metric("经历转译", asset_count_any(['经历证据转译', '求职画像']))
+        st.metric("作品集方案", asset_count_any(['作品集规划']))
+        st.metric("短板闭环", len(st.session_state.weakness_tags))
+else:
+    main_col = st.container()
 
-            answer = st.text_area("回答内容", key="interview_answer", height=190, label_visibility="collapsed")
-            voice_payload = realtime_speech(
-                target_label="回答内容",
-                title="实时语音写入回答框",
-                hint="点击开始后直接说话，文字会边说边写入上方回答框。停止后再提交复盘。",
-                key="voice_interview_answer",
+with main_col:
+    st.markdown("---")
+
+    # ========== 模块 1：JD 解码 ==========
+    if st.session_state.active_section == "JD解码":
+        st.markdown('<div class="section-title">JD 解码：先看岗位到底要什么证据</div>', unsafe_allow_html=True)
+        st.markdown('<div class="subtle-note">把 JD 原文拆成背后能力、证据标准、高风险追问和作品集可补证据。即使还没整理经历，也能先看懂岗位筛选逻辑。</div>', unsafe_allow_html=True)
+
+        if st.button("填入所选示例", key="jd_example"):
+            fill_example(st.session_state.selected_example)
+            st.rerun()
+
+        with st.form("jd_decode_form"):
+            jd_text = st.text_area("目标岗位 JD", key="jd_text", height=240)
+            user_summary = st.text_area("可选：你的背景摘要（没有也可以先解码 JD）", key="jd_user_summary", height=100)
+            jd_submitted = st.form_submit_button("生成 JD 证据地图", type="primary", use_container_width=True)
+
+        if jd_submitted:
+            profile_context = user_summary or build_profile_context_for_agent() or "用户暂未提供背景，请先按通用 AI PM 候选人标准解码 JD，并标注哪些证据需要后续补充。"
+            if len(jd_text.strip()) < 80:
+                st.warning("请补充更完整的 JD。JD 建议包含岗位职责和任职要求。")
+            else:
+                prompt = jd_prompt.build_user_prompt(profile_context, jd_text)
+                st.session_state.jd_result = call_ai_with_progress(
+                    jd_prompt.SYSTEM_PROMPT,
+                    prompt,
+                    title=f"生成 JD 证据地图 · {jd_prompt.PROMPT_VERSION}",
+                    steps=["读取岗位要求", "拆解背后能力", "定义证据标准", "整理追问风险"],
+                )
+
+        render_result(
+            st.session_state.jd_result,
+            "JD证据地图",
+            "AI PM 岗位证据地图",
+            "JD解码",
+            "jd",
+            next_section="经历转译",
+            next_label="下一步：把我的经历转译成岗位证据",
+        )
+
+    # ========== 模块 2：经历转译 ==========
+    elif st.session_state.active_section == "经历转译":
+        st.markdown('<div class="section-title">经历转译：把过往经历翻译成 AI PM 能力证据</div>', unsafe_allow_html=True)
+        st.markdown('<div class="subtle-note">系统会引用 JD 证据地图，判断哪些经历能写进简历、能讲成面试故事、能支撑作品集，哪些不能过度包装。</div>', unsafe_allow_html=True)
+
+        if st.button("填入所选示例", key="profile_example"):
+            fill_example(st.session_state.selected_example)
+            st.rerun()
+
+        if st.session_state.jd_result:
+            st.caption("✅ 已检测到 JD 证据地图，本模块会自动引用前 1500 字作为岗位证据上下文。")
+        else:
+            st.caption("提示：可以先做 JD 解码；也可以直接转译经历，系统会按目标岗位方向处理。")
+
+        with st.form("profile_form"):
+            current_background = st.text_area("你的过往背景", key="profile_background", height=120)
+            target_role = st.selectbox("目标岗位方向", list(CAREER_PATHS.keys()), key="profile_target_role")
+            ai_level = st.select_slider("AI 基础水平", options=["完全小白", "了解概念", "用过 AI 工具", "做过 AI 项目", "能独立设计 AI 产品方案"], key="profile_ai_level")
+            product_experience = st.text_area("你已有的项目/产品/运营经历", key="profile_project", height=110)
+            biggest_confusion = st.text_input("当前最大困惑", key="profile_confusion")
+            submitted = st.form_submit_button("生成经历证据转译", type="primary", use_container_width=True)
+
+        if submitted:
+            if len(current_background.strip()) < 20 or len(product_experience.strip()) < 20:
+                st.warning("为了生成有价值的经历转译，请至少补充一段过往背景和一段项目/经历，建议包含职责、动作和结果。")
+            else:
+                prompt = profile_prompt.build_user_prompt(
+                    current_background,
+                    target_role,
+                    ai_level,
+                    product_experience,
+                    biggest_confusion,
+                    st.session_state.jd_result[:1500],
+                )
+                st.session_state.profile_result = call_ai_with_progress(
+                    profile_prompt.SYSTEM_PROMPT,
+                    prompt,
+                    title=f"生成经历证据转译 · {profile_prompt.PROMPT_VERSION}",
+                    steps=["读取个人背景", "提炼可迁移证据", "识别包装边界", "整理转译报告"],
+                )
+
+        render_result(
+            st.session_state.profile_result,
+            "经历证据转译",
+            "经历到 AI PM 能力证据转译报告",
+            "经历转译",
+            "profile",
+            next_section="作品集规划",
+            next_label="下一步：用作品集补齐缺失证据",
+        )
+
+    # ========== 模块 3：作品集规划 ==========
+    elif st.session_state.active_section == "作品集规划":
+        st.markdown('<div class="section-title">作品集规划：用一个可完成的项目补齐岗位证据</div>', unsafe_allow_html=True)
+        st.markdown('<div class="subtle-note">不是做大而全的 Demo，而是围绕 JD 缺口规划最小可行作品集：证明场景理解、AI 能力设计、指标、边界和面试讲法。</div>', unsafe_allow_html=True)
+
+        context_cols = st.columns(3)
+        context_cols[0].metric("JD 证据地图", "已生成" if st.session_state.jd_result else "未生成")
+        context_cols[1].metric("经历转译", "已生成" if st.session_state.profile_result else "未生成")
+        context_cols[2].metric("短板标签", len(st.session_state.weakness_tags))
+
+        with st.form("portfolio_form"):
+            target_role = st.selectbox("目标岗位方向", list(CAREER_PATHS.keys()), key="portfolio_target_role")
+            time_budget = st.selectbox("可投入时间", ["3 天", "7 天", "14 天", "30 天"], key="portfolio_time_budget")
+            tech_level = st.selectbox(
+                "技术实现水平",
+                ["只会用 AI 工具", "会简单 Streamlit / Python", "会 API 调用", "能做前后端原型", "已有完整项目经验"],
+                key="portfolio_tech_level",
             )
-            if isinstance(voice_payload, dict):
-                st.session_state.voice_metrics = voice_payload
-                if voice_payload.get("transcript"):
-                    st.session_state.last_voice_transcript = voice_payload.get("transcript", "")
-            review_submitted = st.button("提交证据化复盘", type="primary", use_container_width=True)
+            portfolio_goal = st.text_area("你想证明的能力 / 想做的方向（可选）", key="portfolio_goal", height=100)
+            portfolio_submitted = st.form_submit_button("生成作品集证据方案", type="primary", use_container_width=True)
 
-            if review_submitted:
-                if len(answer.strip()) < 50:
-                    st.warning("回答太短，无法做有效复盘。请至少补充背景、行动、结果和反思。")
-                else:
-                    voice_metrics = st.session_state.get("voice_metrics", {})
-                    duration_s = int(voice_metrics.get("duration_ms", 0) / 1000) if voice_metrics else 0
-                    pause_count = voice_metrics.get("pause_count", 0) if voice_metrics else 0
-                    max_pause_s = (voice_metrics.get("max_pause_ms", 0) / 1000) if voice_metrics else 0
-                    prompt = interview_prompt.build_user_prompt(
-                        role,
-                        st.session_state.interview_question,
-                        answer,
-                        duration_s,
-                        pause_count,
-                        max_pause_s,
-                        build_evidence_context(context_mode),
+        if portfolio_submitted:
+            prompt = portfolio_prompt.build_user_prompt(
+                st.session_state.jd_result[:1800],
+                st.session_state.profile_result[:1800],
+                weakness_context(),
+                target_role,
+                time_budget,
+                tech_level,
+                portfolio_goal,
+            )
+            st.session_state.portfolio_result = call_ai_with_progress(
+                portfolio_prompt.SYSTEM_PROMPT,
+                prompt,
+                title=f"生成作品集规划 · {portfolio_prompt.PROMPT_VERSION}",
+                steps=["读取岗位证据", "定位作品集主题", "设计 MVP 范围", "整理面试讲法"],
+            )
+
+        render_result(
+            st.session_state.portfolio_result,
+            "作品集规划",
+            "AI PM 作品集证据方案",
+            "作品集规划",
+            "portfolio",
+            next_section="面试训练",
+            next_label="下一步：验证我的回答能不能扛追问",
+        )
+
+    # ========== 模块 4：面试训练 ==========
+    elif st.session_state.active_section == "面试训练":
+        st.markdown('<div class="section-title">面试训练：把回答从学习笔记改成岗位证明</div>', unsafe_allow_html=True)
+        st.markdown('<div class="subtle-note">这个模块不是泛泛打分，而是固定输出：原回答评分、为什么不像岗位证明、缺少的产品证据、改写版回答、追问防守。</div>', unsafe_allow_html=True)
+        st.markdown("""
+        <div class="kb-card">
+            <h4>本模块会输出什么？</h4>
+            <p>① 原回答评分 · ② 原回答为什么不像岗位证明 · ③ 缺少的产品证据 · ④ 改写版回答 · ⑤ 追问防守</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        if st.session_state.weakness_tags:
+            focus_tags = "、".join(f"{t['tag']}（{t['dimension']}）" for t in st.session_state.weakness_tags[:5])
+            st.caption(f"📌 系统已记录的薄弱点（会用于个性化追问与抽题）：{focus_tags}")
+
+        mode_label = st.radio(
+            "训练模式",
+            ["single", "agent"],
+            format_func=lambda x: "单轮证据复盘" if x == "single" else "多轮抗追问 Agent",
+            horizontal=True,
+            key="interview_mode",
+        )
+
+        if mode_label == "single":
+            role = st.selectbox("选择模拟岗位", list(INTERVIEW_QUESTIONS.keys()), key="interview_role")
+            context_mode = st.selectbox(
+                "证据上下文",
+                ["不引用", "引用 JD 解码", "引用经历转译", "引用作品集规划", "引用全部上下文"],
+                key="interview_context_mode",
+            )
+            question_bank = INTERVIEW_QUESTIONS[role]
+
+            weak_dims = top_weak_dimensions(st.session_state.device_id, top_n=2)
+            if weak_dims:
+                st.caption(f"🎯 本次抽题将优先考察你的弱项维度：{', '.join(weak_dims)}")
+
+            col_a, col_b, col_c = st.columns([1, 1, 1])
+            with col_a:
+                if st.button("下一道面试题", type="primary", use_container_width=True):
+                    ranked = sorted(
+                        enumerate(question_bank),
+                        key=lambda kv: -sum(1 for d in weak_dims if d.replace(" ", "") in kv[1].replace(" ", "")),
                     )
-                    st.session_state.interview_review = call_ai_with_progress(
-                        interview_prompt.SYSTEM_PROMPT,
-                        prompt,
-                        title=f"生成证据化复盘 · {interview_prompt.PROMPT_VERSION}",
-                        steps=["读取面试回答", "拆解回答主张", "审查证据链", "整理复盘建议"],
+                    idx = ranked[st.session_state.interview_index % len(ranked)][0]
+                    st.session_state.interview_question = question_bank[idx]
+                    st.session_state.interview_index += 1
+                    st.session_state.interview_review = ""
+            with col_b:
+                if st.button("填入示例回答", use_container_width=True):
+                    if not st.session_state.interview_question:
+                        st.session_state.interview_question = question_bank[0]
+                    st.session_state.interview_answer = EXAMPLE_ANSWER
+                    st.rerun()
+            with col_c:
+                if st.button("清空本轮", use_container_width=True):
+                    st.session_state.interview_question = ""
+                    st.session_state.interview_review = ""
+                    st.session_state.interview_answer = ""
+                    st.session_state.voice_metrics = {}
+
+            if st.session_state.interview_question:
+                st.info(f"面试题：{st.session_state.interview_question}")
+                st.markdown('<div class="voice-row"><div class="title">输入你的回答</div><div class="hint">提交后系统会拆解你的回答主张，判断每个主张是否有真实经历、项目、指标或作品集证据支撑。</div></div>', unsafe_allow_html=True)
+
+                answer = st.text_area("回答内容", key="interview_answer", height=190, label_visibility="collapsed")
+                voice_payload = realtime_speech(
+                    target_label="回答内容",
+                    title="实时语音写入回答框",
+                    hint="点击开始后直接说话，文字会边说边写入上方回答框。停止后再提交复盘。",
+                    key="voice_interview_answer",
+                )
+                if isinstance(voice_payload, dict):
+                    st.session_state.voice_metrics = voice_payload
+                    if voice_payload.get("transcript"):
+                        st.session_state.last_voice_transcript = voice_payload.get("transcript", "")
+                review_submitted = st.button("提交证据化复盘", type="primary", use_container_width=True)
+
+                if review_submitted:
+                    if len(answer.strip()) < 50:
+                        st.warning("回答太短，无法做有效复盘。请至少补充背景、行动、结果和反思。")
+                    else:
+                        voice_metrics = st.session_state.get("voice_metrics", {})
+                        duration_s = int(voice_metrics.get("duration_ms", 0) / 1000) if voice_metrics else 0
+                        pause_count = voice_metrics.get("pause_count", 0) if voice_metrics else 0
+                        max_pause_s = (voice_metrics.get("max_pause_ms", 0) / 1000) if voice_metrics else 0
+                        prompt = interview_prompt.build_user_prompt(
+                            role,
+                            st.session_state.interview_question,
+                            answer,
+                            duration_s,
+                            pause_count,
+                            max_pause_s,
+                            build_evidence_context(context_mode),
+                        )
+                        st.session_state.interview_review = call_ai_with_progress(
+                            interview_prompt.SYSTEM_PROMPT,
+                            prompt,
+                            title=f"生成证据化复盘 · {interview_prompt.PROMPT_VERSION}",
+                            steps=["读取面试回答", "拆解回答主张", "审查证据链", "整理复盘建议"],
+                        )
+                        tags = extract_weakness_tags(st.session_state.interview_review)
+                        saved = persist_weakness_tags(st.session_state.device_id, tags)
+                        st.session_state.weakness_tags = list_weakness_tags(st.session_state.device_id)
+                        save_interview_session(
+                            st.session_state.device_id,
+                            role,
+                            "single",
+                            st.session_state.interview_question,
+                            answer,
+                            st.session_state.interview_review,
+                            None,
+                        )
+                        if saved:
+                            st.toast(f"已抽取并写入 {saved} 个能力短板标签到你的画像")
+
+            render_result(st.session_state.interview_review, "面试证据复盘", "模拟面试证据化复盘", "面试训练", "interview", next_section="面试训练", next_label="下一步：继续做知识掌握度自测")
+
+        else:
+            st.session_state.agent_role = st.selectbox("选择模拟岗位", list(INTERVIEW_QUESTIONS.keys()), key="agent_role_select")
+            agent_role = st.session_state.agent_role
+            question_bank = INTERVIEW_QUESTIONS[agent_role]
+
+            col1, col2, col3 = st.columns([1, 1, 1])
+            with col1:
+                max_rounds = st.slider("最多追问轮数", 2, 6, st.session_state.agent_max_rounds, key="agent_max_rounds_slider")
+                st.session_state.agent_max_rounds = max_rounds
+            with col2:
+                if st.button("开始一场抗追问面试", type="primary", use_container_width=True):
+                    weak_dims = top_weak_dimensions(st.session_state.device_id, top_n=2)
+                    ranked = sorted(
+                        enumerate(question_bank),
+                        key=lambda kv: -sum(1 for d in weak_dims if d.replace(" ", "") in kv[1].replace(" ", "")),
                     )
-                    tags = extract_weakness_tags(st.session_state.interview_review)
+                    idx = ranked[0][0]
+                    st.session_state.agent_question = question_bank[idx]
+                    st.session_state.agent_dialogue = [{"role": "interviewer", "content": question_bank[idx]}]
+                    st.session_state.agent_round = 0
+                    st.session_state.agent_state = "awaiting_user"
+                    st.session_state.agent_final_review = ""
+            with col3:
+                if st.button("结束并复盘", use_container_width=True, disabled=(st.session_state.agent_state == "idle" or not st.session_state.agent_dialogue)):
+                    st.session_state.agent_state = "ready_for_review"
+
+            if st.session_state.agent_dialogue:
+                st.markdown(f"**起手题：** {st.session_state.agent_question}")
+                for turn in st.session_state.agent_dialogue:
+                    if turn["role"] == "interviewer":
+                        with st.chat_message("assistant", avatar="🎙️"):
+                            st.markdown(turn["content"])
+                    else:
+                        with st.chat_message("user"):
+                            st.markdown(turn["content"])
+
+                if st.session_state.agent_state == "awaiting_user":
+                    user_reply = st.chat_input("你的回答（说完后回车提交）")
+                    if user_reply:
+                        st.session_state.agent_dialogue.append({"role": "candidate", "content": user_reply})
+                        st.session_state.agent_round += 1
+
+                        if st.session_state.agent_round >= st.session_state.agent_max_rounds:
+                            st.session_state.agent_state = "ready_for_review"
+                        else:
+                            weak_focus = [t["dimension"] for t in st.session_state.weakness_tags[:3] if t.get("dimension")]
+                            followup_user_prompt = agent_prompt.build_agent_opening_prompt(
+                                agent_role,
+                                build_profile_context_for_agent(),
+                                weak_focus,
+                                st.session_state.agent_question,
+                            )
+                            dialogue_block = "\n".join(
+                                f"{'面试官' if t['role'] == 'interviewer' else '候选人'}：{t['content']}"
+                                for t in st.session_state.agent_dialogue
+                            )
+                            evidence_context = build_evidence_context("引用全部上下文")
+                            full_user_prompt = followup_user_prompt + "\n\n## 可用证据上下文\n" + evidence_context + "\n\n## 对话历史\n" + dialogue_block + "\n\n请输出下一个追问。"
+                            with st.spinner(f"AI 面试官正在追问（第 {st.session_state.agent_round + 1} 轮 / {st.session_state.agent_max_rounds}）..."):
+                                followup = call_ai_raw(agent_prompt.AGENT_OPENING_SYSTEM, full_user_prompt, temperature=0.7)
+                            if followup:
+                                st.session_state.agent_dialogue.append({"role": "interviewer", "content": followup.strip()})
+                        st.rerun()
+
+                if st.session_state.agent_state == "ready_for_review" and not st.session_state.agent_final_review:
+                    weak_focus = [t["dimension"] for t in st.session_state.weakness_tags[:3] if t.get("dimension")]
+                    dialogue_lines = [
+                        f"{'面试官' if t['role'] == 'interviewer' else '候选人'}：{t['content']}"
+                        for t in st.session_state.agent_dialogue
+                    ]
+                    final_prompt = agent_prompt.build_agent_final_prompt(
+                        agent_role,
+                        st.session_state.agent_question,
+                        dialogue_lines,
+                        build_profile_context_for_agent() + "\n\n" + build_evidence_context("引用全部上下文"),
+                        weak_focus,
+                    )
+                    st.session_state.agent_final_review = call_ai_with_progress(
+                        agent_prompt.AGENT_FINAL_SYSTEM,
+                        final_prompt,
+                        title=f"抗追问最终复盘 · {agent_prompt.AGENT_PROMPT_VERSION}",
+                        steps=["还原追问过程", "定位破绽", "生成合格答案", "抽取短板标签"],
+                    )
+                    tags = extract_weakness_tags(st.session_state.agent_final_review)
                     saved = persist_weakness_tags(st.session_state.device_id, tags)
                     st.session_state.weakness_tags = list_weakness_tags(st.session_state.device_id)
                     save_interview_session(
                         st.session_state.device_id,
-                        role,
-                        "single",
-                        st.session_state.interview_question,
-                        answer,
-                        st.session_state.interview_review,
+                        agent_role,
+                        "agent",
+                        st.session_state.agent_question,
+                        "\n".join(dialogue_lines),
+                        st.session_state.agent_final_review,
                         None,
                     )
                     if saved:
                         st.toast(f"已抽取并写入 {saved} 个能力短板标签到你的画像")
-
-        render_result(st.session_state.interview_review, "面试证据复盘", "模拟面试证据化复盘", "面试训练", "interview", next_section="面试训练", next_label="下一步：继续做知识掌握度自测")
-
-    else:
-        st.session_state.agent_role = st.selectbox("选择模拟岗位", list(INTERVIEW_QUESTIONS.keys()), key="agent_role_select")
-        agent_role = st.session_state.agent_role
-        question_bank = INTERVIEW_QUESTIONS[agent_role]
-
-        col1, col2, col3 = st.columns([1, 1, 1])
-        with col1:
-            max_rounds = st.slider("最多追问轮数", 2, 6, st.session_state.agent_max_rounds, key="agent_max_rounds_slider")
-            st.session_state.agent_max_rounds = max_rounds
-        with col2:
-            if st.button("开始一场抗追问面试", type="primary", use_container_width=True):
-                weak_dims = top_weak_dimensions(st.session_state.device_id, top_n=2)
-                ranked = sorted(
-                    enumerate(question_bank),
-                    key=lambda kv: -sum(1 for d in weak_dims if d.replace(" ", "") in kv[1].replace(" ", "")),
-                )
-                idx = ranked[0][0]
-                st.session_state.agent_question = question_bank[idx]
-                st.session_state.agent_dialogue = [{"role": "interviewer", "content": question_bank[idx]}]
-                st.session_state.agent_round = 0
-                st.session_state.agent_state = "awaiting_user"
-                st.session_state.agent_final_review = ""
-        with col3:
-            if st.button("结束并复盘", use_container_width=True, disabled=(st.session_state.agent_state == "idle" or not st.session_state.agent_dialogue)):
-                st.session_state.agent_state = "ready_for_review"
-
-        if st.session_state.agent_dialogue:
-            st.markdown(f"**起手题：** {st.session_state.agent_question}")
-            for turn in st.session_state.agent_dialogue:
-                if turn["role"] == "interviewer":
-                    with st.chat_message("assistant", avatar="🎙️"):
-                        st.markdown(turn["content"])
-                else:
-                    with st.chat_message("user"):
-                        st.markdown(turn["content"])
-
-            if st.session_state.agent_state == "awaiting_user":
-                user_reply = st.chat_input("你的回答（说完后回车提交）")
-                if user_reply:
-                    st.session_state.agent_dialogue.append({"role": "candidate", "content": user_reply})
-                    st.session_state.agent_round += 1
-
-                    if st.session_state.agent_round >= st.session_state.agent_max_rounds:
-                        st.session_state.agent_state = "ready_for_review"
-                    else:
-                        weak_focus = [t["dimension"] for t in st.session_state.weakness_tags[:3] if t.get("dimension")]
-                        followup_user_prompt = agent_prompt.build_agent_opening_prompt(
-                            agent_role,
-                            build_profile_context_for_agent(),
-                            weak_focus,
-                            st.session_state.agent_question,
-                        )
-                        dialogue_block = "\n".join(
-                            f"{'面试官' if t['role'] == 'interviewer' else '候选人'}：{t['content']}"
-                            for t in st.session_state.agent_dialogue
-                        )
-                        evidence_context = build_evidence_context("引用全部上下文")
-                        full_user_prompt = followup_user_prompt + "\n\n## 可用证据上下文\n" + evidence_context + "\n\n## 对话历史\n" + dialogue_block + "\n\n请输出下一个追问。"
-                        with st.spinner(f"AI 面试官正在追问（第 {st.session_state.agent_round + 1} 轮 / {st.session_state.agent_max_rounds}）..."):
-                            followup = call_ai_raw(agent_prompt.AGENT_OPENING_SYSTEM, full_user_prompt, temperature=0.7)
-                        if followup:
-                            st.session_state.agent_dialogue.append({"role": "interviewer", "content": followup.strip()})
+                    st.session_state.agent_state = "reviewed"
                     st.rerun()
 
-            if st.session_state.agent_state == "ready_for_review" and not st.session_state.agent_final_review:
-                weak_focus = [t["dimension"] for t in st.session_state.weakness_tags[:3] if t.get("dimension")]
-                dialogue_lines = [
-                    f"{'面试官' if t['role'] == 'interviewer' else '候选人'}：{t['content']}"
-                    for t in st.session_state.agent_dialogue
-                ]
-                final_prompt = agent_prompt.build_agent_final_prompt(
-                    agent_role,
-                    st.session_state.agent_question,
-                    dialogue_lines,
-                    build_profile_context_for_agent() + "\n\n" + build_evidence_context("引用全部上下文"),
-                    weak_focus,
-                )
-                st.session_state.agent_final_review = call_ai_with_progress(
-                    agent_prompt.AGENT_FINAL_SYSTEM,
-                    final_prompt,
-                    title=f"抗追问最终复盘 · {agent_prompt.AGENT_PROMPT_VERSION}",
-                    steps=["还原追问过程", "定位破绽", "生成合格答案", "抽取短板标签"],
-                )
-                tags = extract_weakness_tags(st.session_state.agent_final_review)
-                saved = persist_weakness_tags(st.session_state.device_id, tags)
-                st.session_state.weakness_tags = list_weakness_tags(st.session_state.device_id)
-                save_interview_session(
-                    st.session_state.device_id,
-                    agent_role,
-                    "agent",
-                    st.session_state.agent_question,
-                    "\n".join(dialogue_lines),
-                    st.session_state.agent_final_review,
-                    None,
-                )
-                if saved:
-                    st.toast(f"已抽取并写入 {saved} 个能力短板标签到你的画像")
-                st.session_state.agent_state = "reviewed"
-                st.rerun()
+                if st.session_state.agent_final_review:
+                    render_result(
+                        st.session_state.agent_final_review,
+                        "面试证据复盘",
+                        f"抗追问面试复盘 · {agent_role}",
+                        "多轮面试",
+                        "agent_review",
+                        next_section="面试训练",
+                        next_label="下一步：根据破绽地图补强知识掌握度",
+                    )
+            else:
+                st.caption("点击「开始一场抗追问面试」启动 AI 面试官。系统会基于你的画像、作品集和历史短板自动选题并连续追问。")
 
-            if st.session_state.agent_final_review:
-                render_result(
-                    st.session_state.agent_final_review,
-                    "面试证据复盘",
-                    f"抗追问面试复盘 · {agent_role}",
-                    "多轮面试",
-                    "agent_review",
-                    next_section="面试训练",
-                    next_label="下一步：根据破绽地图补强知识掌握度",
+        st.markdown("---")
+        st.markdown('<div class="section-title">面试知识补强：只保留掌握度自测</div>', unsafe_allow_html=True)
+        st.markdown('<div class="subtle-note">这里不再做大面积知识库展示，只判断一个知识点是否达到面试可用、产品可用、抗追问可用的深度。</div>', unsafe_allow_html=True)
+
+        topic = st.text_input("要自测的知识点", key="mastery_topic", placeholder="例如：RAG、Agent、模型评估、Prompt 工程")
+        target_role = st.selectbox("目标岗位方向", list(CAREER_PATHS.keys()), key="mastery_target_role")
+        user_explanation = st.text_area("先用你自己的话解释这个知识点", key="mastery_explanation", height=150, placeholder="不要复制定义，按你面试时会怎么说来写。")
+        mastery_voice = realtime_speech(
+            target_label="先用你自己的话解释这个知识点",
+            title="实时语音写入自测解释",
+            hint="点击开始后直接解释这个知识点，文字会边说边写入上方输入框。",
+            key="voice_mastery_explanation",
+        )
+        if isinstance(mastery_voice, dict):
+            st.session_state.voice_metrics = mastery_voice
+        mastery_submitted = st.button("评估掌握度", type="primary", use_container_width=True)
+        if mastery_submitted:
+            if len(user_explanation.strip()) < 20:
+                st.warning("请先用自己的话解释，至少写 20 字。")
+            else:
+                prompt = knowledge_prompt.build_mastery_prompt(topic, user_explanation, target_role, weakness_context())
+                st.session_state.mastery_result = call_ai_with_progress(
+                    knowledge_prompt.MASTERY_SYSTEM_PROMPT,
+                    prompt,
+                    title=f"评估掌握度 · {knowledge_prompt.MASTERY_PROMPT_VERSION}",
+                    steps=["读取你的解释", "按 Rubric 评分", "定位追问风险", "生成补强卡片"],
                 )
-        else:
-            st.caption("点击「开始一场抗追问面试」启动 AI 面试官。系统会基于你的画像、作品集和历史短板自动选题并连续追问。")
+        render_result(st.session_state.mastery_result, "知识掌握卡", f"{st.session_state.mastery_topic} 掌握度自测", "面试知识补强", "mastery", next_section="补强闭环/我的资产", next_label="下一步：生成补强闭环")
 
-    st.markdown("---")
-    st.markdown('<div class="section-title">面试知识补强：只保留掌握度自测</div>', unsafe_allow_html=True)
-    st.markdown('<div class="subtle-note">这里不再做大面积知识库展示，只判断一个知识点是否达到面试可用、产品可用、抗追问可用的深度。</div>', unsafe_allow_html=True)
+    # ========== 模块 6：补强闭环 / 我的资产 ==========
+    elif st.session_state.active_section == "补强闭环/我的资产":
+        st.markdown('<div class="section-title">补强闭环 / 我的资产：从生成内容到下一步行动</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="subtle-note">资产已按设备 ID 持久化保存。当前设备：<code>{st.session_state.device_id}</code>。把当前页面 URL 收藏，下次回来资产仍在。</div>', unsafe_allow_html=True)
 
-    topic = st.text_input("要自测的知识点", key="mastery_topic", placeholder="例如：RAG、Agent、模型评估、Prompt 工程")
-    target_role = st.selectbox("目标岗位方向", list(CAREER_PATHS.keys()), key="mastery_target_role")
-    user_explanation = st.text_area("先用你自己的话解释这个知识点", key="mastery_explanation", height=150, placeholder="不要复制定义，按你面试时会怎么说来写。")
-    mastery_voice = realtime_speech(
-        target_label="先用你自己的话解释这个知识点",
-        title="实时语音写入自测解释",
-        hint="点击开始后直接解释这个知识点，文字会边说边写入上方输入框。",
-        key="voice_mastery_explanation",
-    )
-    if isinstance(mastery_voice, dict):
-        st.session_state.voice_metrics = mastery_voice
-    mastery_submitted = st.button("评估掌握度", type="primary", use_container_width=True)
-    if mastery_submitted:
-        if len(user_explanation.strip()) < 20:
-            st.warning("请先用自己的话解释，至少写 20 字。")
-        else:
-            prompt = knowledge_prompt.build_mastery_prompt(topic, user_explanation, target_role, weakness_context())
-            st.session_state.mastery_result = call_ai_with_progress(
-                knowledge_prompt.MASTERY_SYSTEM_PROMPT,
+        st.markdown("#### 生成下一轮补强闭环")
+        with st.form("loop_form"):
+            target_role = st.selectbox("目标岗位方向", list(CAREER_PATHS.keys()), key="loop_target_role")
+            target_goal = st.selectbox("近期目标", ["本周投递", "准备面试", "补作品集", "补 AI 技术理解", "重写简历"], key="loop_goal")
+            time_budget = st.selectbox("可投入时间", ["3 天", "7 天", "14 天", "30 天"], key="loop_time_budget")
+            loop_submitted = st.form_submit_button("生成补强闭环计划", type="primary", use_container_width=True)
+
+        if loop_submitted:
+            feedback_summary = "\n".join(f"- {item['created_at']} · {item['module']} · {item['value']}" for item in st.session_state.feedback[:20])
+            prompt = loop_prompt.build_user_prompt(
+                summarize_assets(),
+                weakness_context(10),
+                feedback_summary,
+                target_goal,
+                time_budget,
+                target_role,
+            )
+            st.session_state.loop_result = call_ai_with_progress(
+                loop_prompt.SYSTEM_PROMPT,
                 prompt,
-                title=f"评估掌握度 · {knowledge_prompt.MASTERY_PROMPT_VERSION}",
-                steps=["读取你的解释", "按 Rubric 评分", "定位追问风险", "生成补强卡片"],
-            )
-    render_result(st.session_state.mastery_result, "知识掌握卡", f"{st.session_state.mastery_topic} 掌握度自测", "面试知识补强", "mastery", next_section="补强闭环/我的资产", next_label="下一步：生成补强闭环")
-
-# ========== 模块 6：补强闭环 / 我的资产 ==========
-elif st.session_state.active_section == "补强闭环/我的资产":
-    st.markdown('<div class="section-title">补强闭环 / 我的资产：从生成内容到下一步行动</div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="subtle-note">资产已按设备 ID 持久化保存。当前设备：<code>{st.session_state.device_id}</code>。把当前页面 URL 收藏，下次回来资产仍在。</div>', unsafe_allow_html=True)
-
-    st.markdown("#### 生成下一轮补强闭环")
-    with st.form("loop_form"):
-        target_role = st.selectbox("目标岗位方向", list(CAREER_PATHS.keys()), key="loop_target_role")
-        target_goal = st.selectbox("近期目标", ["本周投递", "准备面试", "补作品集", "补 AI 技术理解", "重写简历"], key="loop_goal")
-        time_budget = st.selectbox("可投入时间", ["3 天", "7 天", "14 天", "30 天"], key="loop_time_budget")
-        loop_submitted = st.form_submit_button("生成补强闭环计划", type="primary", use_container_width=True)
-
-    if loop_submitted:
-        feedback_summary = "\n".join(f"- {item['created_at']} · {item['module']} · {item['value']}" for item in st.session_state.feedback[:20])
-        prompt = loop_prompt.build_user_prompt(
-            summarize_assets(),
-            weakness_context(10),
-            feedback_summary,
-            target_goal,
-            time_budget,
-            target_role,
-        )
-        st.session_state.loop_result = call_ai_with_progress(
-            loop_prompt.SYSTEM_PROMPT,
-            prompt,
-            title=f"生成补强闭环 · {loop_prompt.PROMPT_VERSION}",
-            steps=["盘点已有资产", "合并短板标签", "排序证据缺口", "生成下一步任务"],
-        )
-
-    render_result(st.session_state.loop_result, "补强闭环计划", "AI PM 求职证据补强闭环计划", "补强闭环", "loop")
-
-    st.markdown("---")
-    st.markdown('<div class="section-title">我的求职证据资产库</div>', unsafe_allow_html=True)
-    if not st.session_state.assets:
-        st.info("还没有保存资产。先完成 JD 解码、经历转译、作品集规划或面试训练，然后点击“保存为资产”。")
-    else:
-        export_text = "# AI PM 求职证据资产\n\n"
-        for asset in st.session_state.assets:
-            export_text += f"## {asset['title']}\n\n类型：{asset['type']}  \n时间：{asset['created_at']}\n\n{asset['content']}\n\n---\n\n"
-
-        interview_pack = f"""# AI PM 面试证据准备稿
-
-## 项目一句话介绍
-我做了一个面向 AI 产品转行者的求职证据工作台，帮助用户把 JD 要求、过往经历、作品集和面试回答转化成岗位认可的能力证据。
-
-## 已沉淀资产
-{export_text}
-
-## 面试讲法提醒
-- 不要说系统替用户编造项目；强调证据边界和待补充信息。
-- 强调差异点：JD 证据地图、经历转译、作品集补证、证据化面试复盘、短板闭环。
-- 当前是 MVP：不做自动投递，不声称完整 RAG，不替用户完成作品集。
-"""
-
-        col_export1, col_export2 = st.columns(2)
-        with col_export1:
-            st.download_button(
-                "下载全部资产 Markdown",
-                data=export_text,
-                file_name="ai_pm_evidence_assets.md",
-                mime="text/markdown",
-                use_container_width=True,
-            )
-        with col_export2:
-            st.download_button(
-                "生成并下载面试准备稿",
-                data=interview_pack,
-                file_name="ai_pm_interview_pack.md",
-                mime="text/markdown",
-                use_container_width=True,
+                title=f"生成补强闭环 · {loop_prompt.PROMPT_VERSION}",
+                steps=["盘点已有资产", "合并短板标签", "排序证据缺口", "生成下一步任务"],
             )
 
-        for asset in st.session_state.assets:
-            st.markdown('<div class="asset-box">', unsafe_allow_html=True)
-            st.markdown(f'<div class="asset-title">{asset["title"]}</div>', unsafe_allow_html=True)
-            st.markdown(f'<div class="asset-meta">{asset["type"]} · {asset["created_at"]} · ID {asset["id"]}</div>', unsafe_allow_html=True)
-            with st.expander("查看内容", expanded=False):
-                st.markdown(asset["content"])
-            if st.button("删除该资产", key=f"del_asset_{asset['id']}"):
-                delete_career_asset(st.session_state.device_id, asset["id"])
-                st.session_state.assets = list_career_assets(st.session_state.device_id)
-                st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
+        render_result(st.session_state.loop_result, "补强闭环计划", "AI PM 求职证据补强闭环计划", "补强闭环", "loop")
 
-    st.markdown("---")
-    st.markdown('<div class="section-title">能力短板地图（数据飞轮）</div>', unsafe_allow_html=True)
-    st.caption("每次面试复盘后，系统会自动抽取你的能力短板标签并合并到这里。下次抽题、追问、知识掌握度和补强闭环都会引用这些标签。")
-    if not st.session_state.weakness_tags:
-        st.caption("还没有短板记录。先去做一次面试训练，系统会自动写入。")
-    else:
-        for tag in st.session_state.weakness_tags:
-            severity_dot = "🔴" if tag["severity"] >= 3 else ("🟡" if tag["severity"] == 2 else "🟢")
-            st.markdown(
-                f"- {severity_dot} **{tag['tag']}** · {tag.get('dimension') or '未分类'} "
-                f"· 命中 {tag['hit_count']} 次 · 最近 {tag['last_hit_at']}"
-            )
+        st.markdown("---")
+        st.markdown('<div class="section-title">我的求职证据资产库</div>', unsafe_allow_html=True)
+        if not st.session_state.assets:
+            st.info("还没有保存资产。先完成 JD 解码、经历转译、作品集规划或面试训练，然后点击“保存为资产”。")
+        else:
+            export_text = "# AI PM 求职证据资产\n\n"
+            for asset in st.session_state.assets:
+                export_text += f"## {asset['title']}\n\n类型：{asset['type']}  \n时间：{asset['created_at']}\n\n{asset['content']}\n\n---\n\n"
 
-    st.markdown("---")
-    st.markdown('<div class="section-title">反馈记录</div>', unsafe_allow_html=True)
-    if not st.session_state.feedback:
-        st.caption("还没有反馈记录。")
-    else:
-        for item in st.session_state.feedback[:10]:
-            st.caption(f"{item['created_at']} · {item['module']} · {item['value']}")
+            interview_pack = f"""# AI PM 面试证据准备稿
 
-    st.markdown("---")
-    if st.button("清空我的所有资产与反馈", key="clear_career_data"):
-        clear_career_data(st.session_state.device_id)
-        st.session_state.assets = []
-        st.session_state.feedback = []
-        st.session_state.weakness_tags = []
-        st.success("已清空当前设备的全部资产、反馈和短板记录。")
-        st.rerun()
+    ## 项目一句话介绍
+    我做了一个面向 AI 产品转行者的求职证据工作台，帮助用户把 JD 要求、过往经历、作品集和面试回答转化成岗位认可的能力证据。
+
+    ## 已沉淀资产
+    {export_text}
+
+    ## 面试讲法提醒
+    - 不要说系统替用户编造项目；强调证据边界和待补充信息。
+    - 强调差异点：JD 证据地图、经历转译、作品集补证、证据化面试复盘、短板闭环。
+    - 当前是 MVP：不做自动投递，不声称完整 RAG，不替用户完成作品集。
+    """
+
+            col_export1, col_export2 = st.columns(2)
+            with col_export1:
+                st.download_button(
+                    "下载全部资产 Markdown",
+                    data=export_text,
+                    file_name="ai_pm_evidence_assets.md",
+                    mime="text/markdown",
+                    use_container_width=True,
+                )
+            with col_export2:
+                st.download_button(
+                    "生成并下载面试准备稿",
+                    data=interview_pack,
+                    file_name="ai_pm_interview_pack.md",
+                    mime="text/markdown",
+                    use_container_width=True,
+                )
+
+            for asset in st.session_state.assets:
+                st.markdown('<div class="asset-box">', unsafe_allow_html=True)
+                st.markdown(f'<div class="asset-title">{asset["title"]}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="asset-meta">{asset["type"]} · {asset["created_at"]} · ID {asset["id"]}</div>', unsafe_allow_html=True)
+                with st.expander("查看内容", expanded=False):
+                    st.markdown(asset["content"])
+                if st.button("删除该资产", key=f"del_asset_{asset['id']}"):
+                    delete_career_asset(st.session_state.device_id, asset["id"])
+                    st.session_state.assets = list_career_assets(st.session_state.device_id)
+                    st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
+
+        st.markdown("---")
+        st.markdown('<div class="section-title">能力短板地图（数据飞轮）</div>', unsafe_allow_html=True)
+        st.caption("每次面试复盘后，系统会自动抽取你的能力短板标签并合并到这里。下次抽题、追问、知识掌握度和补强闭环都会引用这些标签。")
+        if not st.session_state.weakness_tags:
+            st.caption("还没有短板记录。先去做一次面试训练，系统会自动写入。")
+        else:
+            for tag in st.session_state.weakness_tags:
+                severity_dot = "🔴" if tag["severity"] >= 3 else ("🟡" if tag["severity"] == 2 else "🟢")
+                st.markdown(
+                    f"- {severity_dot} **{tag['tag']}** · {tag.get('dimension') or '未分类'} "
+                    f"· 命中 {tag['hit_count']} 次 · 最近 {tag['last_hit_at']}"
+                )
+
+        st.markdown("---")
+        st.markdown('<div class="section-title">反馈记录</div>', unsafe_allow_html=True)
+        if not st.session_state.feedback:
+            st.caption("还没有反馈记录。")
+        else:
+            for item in st.session_state.feedback[:10]:
+                st.caption(f"{item['created_at']} · {item['module']} · {item['value']}")
+
+        st.markdown("---")
+        if st.button("清空我的所有资产与反馈", key="clear_career_data"):
+            clear_career_data(st.session_state.device_id)
+            st.session_state.assets = []
+            st.session_state.feedback = []
+            st.session_state.weakness_tags = []
+            st.success("已清空当前设备的全部资产、反馈和短板记录。")
+            st.rerun()
