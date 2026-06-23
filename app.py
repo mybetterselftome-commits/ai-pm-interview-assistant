@@ -82,7 +82,21 @@ st.markdown("""
         height: 2.75rem;
     }
     [data-testid="stToolbar"] { display: none; }
-    [data-testid="collapsedControl"] { display: flex !important; }
+    [data-testid="collapsedControl"],
+    [data-testid="stSidebarCollapseButton"] {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        z-index: 999999 !important;
+    }
+    [data-testid="collapsedControl"] button,
+    [data-testid="stSidebarCollapseButton"] button,
+    button[kind="header"] {
+        background: #ffffff !important;
+        border: 1px solid #d1d5db !important;
+        border-radius: 10px !important;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12) !important;
+    }
     footer { display: none; }
     [data-testid="stSidebar"] {
         background: #ffffff;
