@@ -723,7 +723,7 @@ if st.session_state.show_left_nav:
     left_col, toggle_col, main_col = st.columns([0.18, 0.035, 0.785], gap="small")
     with left_col:
         st.markdown('<div class="rail-brand">AI PM 求职准备工作台</div>', unsafe_allow_html=True)
-        st.markdown('<div class="rail-subtitle">V4 Career Workspace<br/>把求职准备转成面试材料</div>', unsafe_allow_html=True)
+        st.markdown('<div class="rail-subtitle">AI PM 面试准备助手<br/>从 JD 到面试，一步步准备</div>', unsafe_allow_html=True)
         for section, num, text in nav_items:
             active_mark = "● " if st.session_state.active_section == section else ""
             if st.button(f"{active_mark}{num} {section}", key=f"nav_{section}", use_container_width=True):
