@@ -717,25 +717,55 @@ nav_items = [
     ("补强闭环/我的资产", "05", "沉淀下一步"),
 ]
 
-if st.session_state.show_left_nav:
-    left_col, toggle_col, main_col = st.columns([0.18, 0.035, 0.785], gap="small")
-    with left_col:
-        st.markdown('<div class="rail-brand">AI PM 求职准备工作台</div>', unsafe_allow_html=True)
-        st.markdown('<div class="rail-subtitle">AI PM 面试准备助手<br/>从 JD 到面试，一步步准备</div>', unsafe_allow_html=True)
-        for section, num, text in nav_items:
-            active_mark = "● " if st.session_state.active_section == section else ""
-            if st.button(f"{active_mark}{num} {section}", key=f"nav_{section}", use_container_width=True):
-                st.session_state.active_section = section
-                st.rerun()
-else:
-    _, toggle_col, main_col = st.columns([0.001, 0.035, 0.964], gap="small")
+left_col, toggle_col, main_col = st.columns([0.18, 0.035, 0.785], gap="small")
+with left_col:
+    st.markdown('<div class="rail-brand">AI PM 求职准备工作台</div>', unsafe_allow_html=True)
+    st.markdown('<div class="rail-subtitle">AI PM 面试准备助手<br/>从 JD 到面试，一步步准备</div>', unsafe_allow_html=True)
+    for section, num, text in nav_items:
+        active_mark = "● " if st.session_state.active_section == section else ""
+        if st.button(f"{active_mark}{num} {section}", key=f"nav_{section}", use_container_width=True):
+            st.session_state.active_section = section
+            st.rerun()
 
 with toggle_col:
-    toggle_icon = "‹" if st.session_state.show_left_nav else "›"
-    toggle_help = "隐藏目录" if st.session_state.show_left_nav else "展开目录"
-    if st.button(toggle_icon, key="toggle_left_nav", help=toggle_help):
-        st.session_state.show_left_nav = not st.session_state.show_left_nav
-        st.rerun()
+    components.html(
+        """
+        <button id="railToggle" title="隐藏/展开目录" style="width:34px;height:42px;border:1px solid #d1d5db;border-radius:10px;background:#fff;color:#111827;font-size:20px;cursor:pointer;box-shadow:0 4px 12px rgba(15,23,42,.06);">‹</button>
+        <script>
+        const btn = document.getElementById('railToggle');
+        let hidden = false;
+        function getColumns() {
+          const frame = window.frameElement;
+          const toggleCol = frame && frame.closest('[data-testid="column"]');
+          const block = toggleCol && toggleCol.parentElement;
+          if (!block) return null;
+          const cols = Array.from(block.children).filter(el => el.getAttribute('data-testid') === 'column');
+          return cols.length >= 3 ? {left: cols[0], toggle: cols[1], main: cols[2]} : null;
+        }
+        function apply() {
+          const cols = getColumns();
+          if (!cols) return;
+          btn.textContent = hidden ? '›' : '‹';
+          if (hidden) {
+            cols.left.style.display = 'none';
+            cols.toggle.style.flex = '0 0 44px';
+            cols.toggle.style.width = '44px';
+            cols.main.style.flex = '1 1 calc(100% - 44px)';
+            cols.main.style.width = 'calc(100% - 44px)';
+          } else {
+            cols.left.style.display = '';
+            cols.toggle.style.flex = '';
+            cols.toggle.style.width = '';
+            cols.main.style.flex = '';
+            cols.main.style.width = '';
+          }
+        }
+        btn.addEventListener('click', () => { hidden = !hidden; apply(); });
+        setTimeout(apply, 100);
+        </script>
+        """,
+        height=50,
+    )
 
 with main_col:
 
