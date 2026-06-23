@@ -57,7 +57,7 @@ def build_user_prompt(current_background, target_role, ai_level, product_experie
 可用于哪里只能从：简历 / 面试 / 作品集 / JD 匹配 / 暂不可用 中选择。
 
 ## 3. 过往经历 → AI PM 能力证据转译表
-| 原始经历或动作 | 可迁移能力 | AI PM 岗位价值 | 对应 JD 能力 | 可写入简历的 bullet | 可讲成的面试故事 | 不能夸大的边界 |
+| 原始经历或动作 | 可迁移能力 | AI PM 岗位价值 | 对应 JD 能力 | 可写入简历的 能力描述 | 可讲成的面试故事 | 不能夸大的边界 |
 |---|---|---|---|---|---|---|
 
 要求：
@@ -65,7 +65,7 @@ def build_user_prompt(current_background, target_role, ai_level, product_experie
 - 没有事实支撑的部分必须写「待补充」。
 - 不允许把工具使用包装成完整 AI 产品项目。
 
-## 4. 简历 bullet 改写矩阵
+## 4. 简历能力描述 改写矩阵
 | 原始表达/经历 | 当前问题 | AI 产品化表达 | 依赖事实 | 还需补充的数据 | 是否可直接使用 |
 |---|---|---|---|---|---|
 

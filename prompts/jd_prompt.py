@@ -18,7 +18,7 @@ SYSTEM_PROMPT = """你是一位 AI 产品岗位招聘面试官兼岗位证据解
 禁止输出：
 - 把没有出现在用户画像中的经历写成「现有证据」。
 - 输出「整体匹配较好」「适合尝试」这类没有依据的结论。
-- 给出无法被真实经历支撑的简历 bullet。
+- 给出无法被真实经历支撑的简历能力描述。
 - 输出与该 JD 无关的通用 AI 知识清单。
 """
 
@@ -80,7 +80,7 @@ def build_user_prompt(profile_context, jd_text):
 至少给出 5 个追问，覆盖：业务理解、AI 技术选型（Prompt/RAG/Agent/微调）、评估方法、上线与监控、产品取舍。
 
 ## 7. 简历改写建议
-请输出 5 条可直接放入简历的 bullet，每条包含：
+请输出 5 条可直接放入简历的 能力描述，每条包含：
 - 对应 JD 关键词：
 - 修改前问题：
 - 修改后表达：
@@ -108,7 +108,7 @@ def build_user_prompt(profile_context, jd_text):
 - highest_risks:
 - recommended_interview_questions:
 - recommended_knowledge_topics:
-- recommended_resume_bullets:
+- recommended_resume_descriptions:
 - recommended_portfolio_actions:
 - evidence_gaps:
 """
