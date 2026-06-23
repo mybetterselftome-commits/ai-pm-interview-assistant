@@ -77,31 +77,10 @@ realtime_speech = components.declare_component("realtime_speech", path=REALTIME_
 # ========== CSS ==========
 st.markdown("""
 <style>
-    [data-testid="stHeader"] {
-        background: transparent;
-        height: 2.75rem;
-    }
+    [data-testid="stHeader"] { display: none; }
     [data-testid="stToolbar"] { display: none; }
-    [data-testid="collapsedControl"],
-    [data-testid="stSidebarCollapseButton"] {
-        display: flex !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        z-index: 999999 !important;
-    }
-    [data-testid="collapsedControl"] button,
-    [data-testid="stSidebarCollapseButton"] button,
-    button[kind="header"] {
-        background: #ffffff !important;
-        border: 1px solid #d1d5db !important;
-        border-radius: 10px !important;
-        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12) !important;
-    }
+    [data-testid="collapsedControl"] { display: none; }
     footer { display: none; }
-    [data-testid="stSidebar"] {
-        background: #ffffff;
-        border-right: 1px solid #e5e7eb;
-    }
 
     .stApp { background: #f7f8fb; color: #111827; }
     .main .block-container {
@@ -730,7 +709,8 @@ nav_items = [
     ("补强闭环/我的资产", "05", "沉淀下一步"),
 ]
 
-with st.sidebar:
+left_col, main_col = st.columns([0.18, 0.82], gap="large")
+with left_col:
     st.markdown('<div class="rail-brand">AI PM 求职准备工作台</div>', unsafe_allow_html=True)
     st.markdown('<div class="rail-subtitle">AI PM 面试准备助手<br/>从 JD 到面试，一步步准备</div>', unsafe_allow_html=True)
     for section, num, text in nav_items:
@@ -738,8 +718,6 @@ with st.sidebar:
         if st.button(f"{active_mark}{num} {section}", key=f"nav_{section}", use_container_width=True):
             st.session_state.active_section = section
             st.rerun()
-
-main_col = st.container()
 
 with main_col:
 
