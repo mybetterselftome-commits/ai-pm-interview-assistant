@@ -717,64 +717,24 @@ nav_items = [
     ("补强闭环/我的资产", "05", "沉淀下一步"),
 ]
 
-left_col, toggle_col, main_col = st.columns([0.18, 0.035, 0.785], gap="small")
-with left_col:
-    st.markdown('<div class="rail-brand">AI PM 求职准备工作台</div>', unsafe_allow_html=True)
-    st.markdown('<div class="rail-subtitle">AI PM 面试准备助手<br/>从 JD 到面试，一步步准备</div>', unsafe_allow_html=True)
-    for section, num, text in nav_items:
-        active_mark = "● " if st.session_state.active_section == section else ""
-        if st.button(f"{active_mark}{num} {section}", key=f"nav_{section}", use_container_width=True):
-            st.session_state.active_section = section
-            st.rerun()
+if st.session_state.show_left_nav:
+    left_col, toggle_col, main_col = st.columns([0.18, 0.035, 0.785], gap="small")
+    with left_col:
+        st.markdown('<div class="rail-brand">AI PM 求职准备工作台</div>', unsafe_allow_html=True)
+        st.markdown('<div class="rail-subtitle">AI PM 面试准备助手<br/>从 JD 到面试，一步步准备</div>', unsafe_allow_html=True)
+        for section, num, text in nav_items:
+            active_mark = "● " if st.session_state.active_section == section else ""
+            if st.button(f"{active_mark}{num} {section}", key=f"nav_{section}", use_container_width=True):
+                st.session_state.active_section = section
+                st.rerun()
+else:
+    toggle_col, main_col = st.columns([0.035, 0.965], gap="small")
 
 with toggle_col:
-    components.html(
-        """
-        <button id="railToggle" title="隐藏/展开目录" style="width:34px;height:42px;border:1px solid #d1d5db;border-radius:10px;background:#fff;color:#111827;font-size:20px;cursor:pointer;box-shadow:0 4px 12px rgba(15,23,42,.06);">‹</button>
-        <script>
-        const btn = document.getElementById('railToggle');
-        let hidden = false;
-        function closestByTestId(el, testId) {
-          let node = el;
-          while (node && node !== window.parent.document.body) {
-            if (node.getAttribute && node.getAttribute('data-testid') === testId) return node;
-            node = node.parentElement;
-          }
-          return null;
-        }
-        function getColumns() {
-          const frame = window.frameElement;
-          if (!frame) return null;
-          const toggleCol = closestByTestId(frame, 'column');
-          const block = closestByTestId(toggleCol, 'stHorizontalBlock');
-          if (!block) return null;
-          const cols = Array.from(block.children).filter(el => el.getAttribute('data-testid') === 'column');
-          return cols.length >= 3 ? {left: cols[0], toggle: cols[1], main: cols[2]} : null;
-        }
-        function apply() {
-          const cols = getColumns();
-          if (!cols) return;
-          btn.textContent = hidden ? '›' : '‹';
-          if (hidden) {
-            cols.left.style.display = 'none';
-            cols.toggle.style.flex = '0 0 44px';
-            cols.toggle.style.width = '44px';
-            cols.main.style.flex = '1 1 calc(100% - 44px)';
-            cols.main.style.width = 'calc(100% - 44px)';
-          } else {
-            cols.left.style.display = '';
-            cols.toggle.style.flex = '';
-            cols.toggle.style.width = '';
-            cols.main.style.flex = '';
-            cols.main.style.width = '';
-          }
-        }
-        btn.addEventListener('click', () => { hidden = !hidden; apply(); });
-        setTimeout(apply, 100);
-        </script>
-        """,
-        height=50,
-    )
+    toggle_icon = "‹" if st.session_state.show_left_nav else "›"
+    if st.button(toggle_icon, key="toggle_left_nav", help="隐藏/展开目录"):
+        st.session_state.show_left_nav = not st.session_state.show_left_nav
+        st.rerun()
 
 with main_col:
 
@@ -785,16 +745,15 @@ with main_col:
 
         render_example_buttons("jd")
 
-        with st.form("jd_decode_form"):
-            jd_text = st.text_area("目标岗位 JD", key="jd_text", height=240)
-            user_summary = st.text_area(
-                "可选：简单介绍一下你自己，系统会一起看你和这份 JD 的差距",
-                key="jd_user_summary",
-                height=120,
-                placeholder="可以简单写：你现在做什么、做过哪些项目、用过哪些 AI 工具、有什么数据结果、想转什么方向。\n如果你还没整理好，也可以先留空，系统会先单独解读 JD。",
-                help="这里不是必填。填写后，系统会结合你的经历，判断你和这个岗位的匹配点、差距和准备重点。",
-            )
-            jd_submitted = st.form_submit_button("生成 JD 解读报告", type="primary", use_container_width=True)
+        jd_text = st.text_area("目标岗位 JD", key="jd_text", height=240)
+        user_summary = st.text_area(
+            "可选：简单介绍一下你自己，系统会一起看你和这份 JD 的差距",
+            key="jd_user_summary",
+            height=120,
+            placeholder="可以简单写：你现在做什么、做过哪些项目、用过哪些 AI 工具、有什么数据结果、想转什么方向。\n如果你还没整理好，也可以先留空，系统会先单独解读 JD。",
+            help="这里不是必填。填写后，系统会结合你的经历，判断你和这个岗位的匹配点、差距和准备重点。",
+        )
+        jd_submitted = st.button("生成 JD 解读报告", type="primary", use_container_width=True)
 
         if jd_submitted:
             profile_context = user_summary or build_profile_context_for_agent() or "用户暂未提供背景，请先按通用 AI PM 候选人标准解读 JD，并标注后续需要补充的信息。"
@@ -831,13 +790,12 @@ with main_col:
         else:
             st.caption("提示：可以先做 JD 解码；也可以直接转译经历，系统会按目标岗位方向处理。")
 
-        with st.form("profile_form"):
-            current_background = st.text_area("你的过往背景", key="profile_background", height=120)
-            target_role = st.selectbox("目标岗位方向", list(CAREER_PATHS.keys()), key="profile_target_role")
-            ai_level = st.select_slider("AI 基础水平", options=["完全小白", "了解概念", "用过 AI 工具", "做过 AI 项目", "能独立设计 AI 产品方案"], key="profile_ai_level")
-            product_experience = st.text_area("你已有的项目/产品/运营经历", key="profile_project", height=110)
-            biggest_confusion = st.text_input("当前最大困惑", key="profile_confusion")
-            submitted = st.form_submit_button("生成经历经历转译", type="primary", use_container_width=True)
+        current_background = st.text_area("你的过往背景", key="profile_background", height=120)
+        target_role = st.selectbox("目标岗位方向", list(CAREER_PATHS.keys()), key="profile_target_role")
+        ai_level = st.select_slider("AI 基础水平", options=["完全小白", "了解概念", "用过 AI 工具", "做过 AI 项目", "能独立设计 AI 产品方案"], key="profile_ai_level")
+        product_experience = st.text_area("你已有的项目/产品/运营经历", key="profile_project", height=110)
+        biggest_confusion = st.text_input("当前最大困惑", key="profile_confusion")
+        submitted = st.button("生成经历转译", type="primary", use_container_width=True)
 
         if submitted:
             if len(current_background.strip()) < 20 or len(product_experience.strip()) < 20:
@@ -878,16 +836,15 @@ with main_col:
         context_cols[1].metric("经历转译", "已生成" if st.session_state.profile_result else "未生成")
         context_cols[2].metric("短板标签", len(st.session_state.weakness_tags))
 
-        with st.form("portfolio_form"):
-            target_role = st.selectbox("目标岗位方向", list(CAREER_PATHS.keys()), key="portfolio_target_role")
-            time_budget = st.selectbox("可投入时间", ["3 天", "7 天", "14 天", "30 天"], key="portfolio_time_budget")
-            tech_level = st.selectbox(
-                "技术实现水平",
-                ["只会用 AI 工具", "会简单 Streamlit / Python", "会 API 调用", "能做前后端原型", "已有完整项目经验"],
-                key="portfolio_tech_level",
-            )
-            portfolio_goal = st.text_area("你想证明的能力 / 想做的方向（可选）", key="portfolio_goal", height=100)
-            portfolio_submitted = st.form_submit_button("生成作品集材料方案", type="primary", use_container_width=True)
+        target_role = st.selectbox("目标岗位方向", list(CAREER_PATHS.keys()), key="portfolio_target_role")
+        time_budget = st.selectbox("可投入时间", ["3 天", "7 天", "14 天", "30 天"], key="portfolio_time_budget")
+        tech_level = st.selectbox(
+            "技术实现水平",
+            ["只会用 AI 工具", "会简单 Streamlit / Python", "会 API 调用", "能做前后端原型", "已有完整项目经验"],
+            key="portfolio_tech_level",
+        )
+        portfolio_goal = st.text_area("你想证明的能力 / 想做的方向（可选）", key="portfolio_goal", height=100)
+        portfolio_submitted = st.button("生成作品集材料方案", type="primary", use_container_width=True)
 
         if portfolio_submitted:
             prompt = portfolio_prompt.build_user_prompt(
@@ -1181,11 +1138,10 @@ with main_col:
         st.markdown(f'<div class="subtle-note">资产已按设备 ID 持久化保存。当前设备：<code>{st.session_state.device_id}</code>。把当前页面 URL 收藏，下次回来资产仍在。</div>', unsafe_allow_html=True)
 
         st.markdown("#### 生成下一轮补强闭环")
-        with st.form("loop_form"):
-            target_role = st.selectbox("目标岗位方向", list(CAREER_PATHS.keys()), key="loop_target_role")
-            target_goal = st.selectbox("近期目标", ["本周投递", "准备面试", "补作品集", "补 AI 技术理解", "重写简历"], key="loop_goal")
-            time_budget = st.selectbox("可投入时间", ["3 天", "7 天", "14 天", "30 天"], key="loop_time_budget")
-            loop_submitted = st.form_submit_button("生成补强闭环计划", type="primary", use_container_width=True)
+        target_role = st.selectbox("目标岗位方向", list(CAREER_PATHS.keys()), key="loop_target_role")
+        target_goal = st.selectbox("近期目标", ["本周投递", "准备面试", "补作品集", "补 AI 技术理解", "重写简历"], key="loop_goal")
+        time_budget = st.selectbox("可投入时间", ["3 天", "7 天", "14 天", "30 天"], key="loop_time_budget")
+        loop_submitted = st.button("生成补强闭环计划", type="primary", use_container_width=True)
 
         if loop_submitted:
             feedback_summary = "\n".join(f"- {item['created_at']} · {item['module']} · {item['value']}" for item in st.session_state.feedback[:20])
