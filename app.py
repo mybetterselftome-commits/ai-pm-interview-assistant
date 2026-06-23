@@ -77,12 +77,8 @@ realtime_speech = components.declare_component("realtime_speech", path=REALTIME_
 # ========== CSS ==========
 st.markdown("""
 <style>
-    [data-testid="stHeader"] {
-        background: transparent;
-        height: 2.75rem;
-    }
+    [data-testid="stHeader"] { display: none; }
     [data-testid="stToolbar"] { display: none; }
-    [data-testid="collapsedControl"] { display: flex !important; }
     footer { display: none; }
     [data-testid="stSidebar"] {
         background: #ffffff;
@@ -168,8 +164,16 @@ st.markdown("""
         transform: translateY(-1px);
     }
 
-    .section-title { font-weight: 850; font-size: 1.12rem; margin: 0.8rem 0 0.45rem 0; color: #111827; }
+    .section-title { font-weight: 850; font-size: 1.12rem; margin: 0.4rem 0 0.45rem 0; color: #111827; }
     .subtle-note { color: #6b7280; font-size: 0.86rem; margin-bottom: 0.6rem; }
+    .rail-brand { font-size: 1rem; font-weight: 900; color: #111827; line-height: 1.25; margin: 0.2rem 0 0.15rem 0; }
+    .rail-subtitle { color: #6b7280; font-size: 0.78rem; line-height: 1.4; margin-bottom: 0.75rem; }
+    .rail-toggle-hint { color: #9ca3af; font-size: 0.72rem; text-align: center; }
+    .main .block-container > div > div > div[data-testid="stHorizontalBlock"]:first-of-type > div[data-testid="column"]:first-child {
+        position: sticky;
+        top: 1rem;
+        align-self: flex-start;
+    }
     .result-box {
         background: #ffffff;
         border-radius: 14px;
@@ -716,34 +720,27 @@ nav_items = [
 ]
 
 if st.session_state.show_left_nav:
-    left_col, main_col = st.columns([0.18, 0.82], gap="large")
+    left_col, toggle_col, main_col = st.columns([0.18, 0.035, 0.785], gap="small")
     with left_col:
-        if st.button("‹", key="toggle_left_nav", help="隐藏目录"):
-            st.session_state.show_left_nav = False
-            st.rerun()
+        st.markdown('<div class="rail-brand">AI PM 求职证据工作台</div>', unsafe_allow_html=True)
+        st.markdown('<div class="rail-subtitle">V4 Evidence Workspace<br/>把求职准备转成岗位证据</div>', unsafe_allow_html=True)
         for section, num, text in nav_items:
             active_mark = "● " if st.session_state.active_section == section else ""
             if st.button(f"{active_mark}{num} {section}", key=f"nav_{section}", use_container_width=True):
                 st.session_state.active_section = section
                 st.rerun()
+    with toggle_col:
+        if st.button("‹", key="toggle_left_nav", help="隐藏目录"):
+            st.session_state.show_left_nav = False
+            st.rerun()
 else:
-    if st.button("☰", key="toggle_left_nav", help="显示目录"):
-        st.session_state.show_left_nav = True
-        st.rerun()
-    main_col = st.container()
+    toggle_col, main_col = st.columns([0.035, 0.965], gap="small")
+    with toggle_col:
+        if st.button("☰", key="toggle_left_nav", help="显示目录"):
+            st.session_state.show_left_nav = True
+            st.rerun()
 
 with main_col:
-    st.markdown("""
-    <div class="topbar">
-        <div><span class="brand">AI PM 求职证据工作台</span> · V4 Evidence Workspace</div>
-        <div class="version-pill">AI PM Evidence V4</div>
-    </div>
-    <div class="workspace-header">
-        <h1>把 JD、经历、作品集和面试回答，转化成 AI PM 岗位认可的能力证据</h1>
-        <p>不是帮你写漂亮话，而是把岗位要求拆成证据标准，把过往经历转译成可验证能力，用作品集补证，再通过面试训练和补强闭环沉淀成求职资产。</p>
-    </div>
-    """, unsafe_allow_html=True)
-    st.markdown("---")
 
     # ========== 模块 1：JD 解码 ==========
     if st.session_state.active_section == "JD解码":
