@@ -62,7 +62,7 @@ st.set_page_config(
     page_title="AI PM 求职准备工作台",
     page_icon="🎯",
     layout="wide",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="expanded",
     menu_items={
         "Get Help": None,
         "Report a bug": None,
@@ -77,8 +77,12 @@ realtime_speech = components.declare_component("realtime_speech", path=REALTIME_
 # ========== CSS ==========
 st.markdown("""
 <style>
-    [data-testid="stHeader"] { display: none; }
+    [data-testid="stHeader"] {
+        background: transparent;
+        height: 2.75rem;
+    }
     [data-testid="stToolbar"] { display: none; }
+    [data-testid="collapsedControl"] { display: flex !important; }
     footer { display: none; }
     [data-testid="stSidebar"] {
         background: #ffffff;
@@ -169,11 +173,6 @@ st.markdown("""
     .rail-brand { font-size: 1rem; font-weight: 900; color: #111827; line-height: 1.25; margin: 0.2rem 0 0.15rem 0; }
     .rail-subtitle { color: #6b7280; font-size: 0.78rem; line-height: 1.4; margin-bottom: 0.75rem; }
     .rail-toggle-hint { color: #9ca3af; font-size: 0.72rem; text-align: center; }
-    .main .block-container > div > div > div[data-testid="stHorizontalBlock"]:first-of-type > div[data-testid="column"]:first-child {
-        position: sticky;
-        top: 1rem;
-        align-self: flex-start;
-    }
     .result-box {
         background: #ffffff;
         border-radius: 14px;
@@ -717,24 +716,16 @@ nav_items = [
     ("补强闭环/我的资产", "05", "沉淀下一步"),
 ]
 
-if st.session_state.show_left_nav:
-    left_col, toggle_col, main_col = st.columns([0.18, 0.035, 0.785], gap="small")
-    with left_col:
-        st.markdown('<div class="rail-brand">AI PM 求职准备工作台</div>', unsafe_allow_html=True)
-        st.markdown('<div class="rail-subtitle">AI PM 面试准备助手<br/>从 JD 到面试，一步步准备</div>', unsafe_allow_html=True)
-        for section, num, text in nav_items:
-            active_mark = "● " if st.session_state.active_section == section else ""
-            if st.button(f"{active_mark}{num} {section}", key=f"nav_{section}", use_container_width=True):
-                st.session_state.active_section = section
-                st.rerun()
-else:
-    toggle_col, main_col = st.columns([0.035, 0.965], gap="small")
+with st.sidebar:
+    st.markdown('<div class="rail-brand">AI PM 求职准备工作台</div>', unsafe_allow_html=True)
+    st.markdown('<div class="rail-subtitle">AI PM 面试准备助手<br/>从 JD 到面试，一步步准备</div>', unsafe_allow_html=True)
+    for section, num, text in nav_items:
+        active_mark = "● " if st.session_state.active_section == section else ""
+        if st.button(f"{active_mark}{num} {section}", key=f"nav_{section}", use_container_width=True):
+            st.session_state.active_section = section
+            st.rerun()
 
-with toggle_col:
-    toggle_icon = "‹" if st.session_state.show_left_nav else "›"
-    if st.button(toggle_icon, key="toggle_left_nav", help="隐藏/展开目录"):
-        st.session_state.show_left_nav = not st.session_state.show_left_nav
-        st.rerun()
+main_col = st.container()
 
 with main_col:
 
