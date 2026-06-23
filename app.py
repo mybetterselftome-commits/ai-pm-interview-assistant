@@ -706,18 +706,7 @@ def render_example_buttons(key_prefix):
                 fill_example(example_names[index])
                 st.rerun()
 
-# ========== 顶部 ==========
-st.markdown("""
-<div class="topbar">
-    <div><span class="brand">AI PM 求职证据工作台</span> · V4 Evidence Workspace</div>
-    <div class="version-pill">AI PM Evidence V4</div>
-</div>
-<div class="workspace-header">
-    <h1>把 JD、经历、作品集和面试回答，转化成 AI PM 岗位认可的能力证据</h1>
-    <p>不是帮你写漂亮话，而是把岗位要求拆成证据标准，把过往经历转译成可验证能力，用作品集补证，再通过面试训练和补强闭环沉淀成求职资产。</p>
-</div>
-""", unsafe_allow_html=True)
-
+# ========== 顶部与目录 ==========
 nav_items = [
     ("JD解码", "01", "看懂岗位要求"),
     ("经历转译", "02", "找到可用证据"),
@@ -726,23 +715,34 @@ nav_items = [
     ("补强闭环/我的资产", "05", "沉淀下一步"),
 ]
 
-toggle_label = "隐藏目录" if st.session_state.show_left_nav else "显示目录"
-if st.button(toggle_label, key="toggle_left_nav"):
-    st.session_state.show_left_nav = not st.session_state.show_left_nav
-    st.rerun()
-
 if st.session_state.show_left_nav:
     left_col, main_col = st.columns([0.18, 0.82], gap="large")
     with left_col:
+        if st.button("‹", key="toggle_left_nav", help="隐藏目录"):
+            st.session_state.show_left_nav = False
+            st.rerun()
         for section, num, text in nav_items:
             active_mark = "● " if st.session_state.active_section == section else ""
             if st.button(f"{active_mark}{num} {section}", key=f"nav_{section}", use_container_width=True):
                 st.session_state.active_section = section
                 st.rerun()
 else:
+    if st.button("☰", key="toggle_left_nav", help="显示目录"):
+        st.session_state.show_left_nav = True
+        st.rerun()
     main_col = st.container()
 
 with main_col:
+    st.markdown("""
+    <div class="topbar">
+        <div><span class="brand">AI PM 求职证据工作台</span> · V4 Evidence Workspace</div>
+        <div class="version-pill">AI PM Evidence V4</div>
+    </div>
+    <div class="workspace-header">
+        <h1>把 JD、经历、作品集和面试回答，转化成 AI PM 岗位认可的能力证据</h1>
+        <p>不是帮你写漂亮话，而是把岗位要求拆成证据标准，把过往经历转译成可验证能力，用作品集补证，再通过面试训练和补强闭环沉淀成求职资产。</p>
+    </div>
+    """, unsafe_allow_html=True)
     st.markdown("---")
 
     # ========== 模块 1：JD 解码 ==========
