@@ -729,16 +729,15 @@ if st.session_state.show_left_nav:
             if st.button(f"{active_mark}{num} {section}", key=f"nav_{section}", use_container_width=True):
                 st.session_state.active_section = section
                 st.rerun()
-    with toggle_col:
-        if st.button("‹", key="toggle_left_nav", help="隐藏目录"):
-            st.session_state.show_left_nav = False
-            st.rerun()
 else:
-    toggle_col, main_col = st.columns([0.035, 0.965], gap="small")
-    with toggle_col:
-        if st.button("☰", key="toggle_left_nav", help="显示目录"):
-            st.session_state.show_left_nav = True
-            st.rerun()
+    _, toggle_col, main_col = st.columns([0.001, 0.035, 0.964], gap="small")
+
+with toggle_col:
+    toggle_icon = "‹" if st.session_state.show_left_nav else "›"
+    toggle_help = "隐藏目录" if st.session_state.show_left_nav else "展开目录"
+    if st.button(toggle_icon, key="toggle_left_nav", help=toggle_help):
+        st.session_state.show_left_nav = not st.session_state.show_left_nav
+        st.rerun()
 
 with main_col:
 
