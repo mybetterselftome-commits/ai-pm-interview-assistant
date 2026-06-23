@@ -749,18 +749,11 @@ with main_col:
         render_example_buttons("jd")
 
         with st.form("jd_decode_form"):
-            jd_text = st.text_area("目标岗位 JD", key="jd_text", height=240)
-            user_summary = st.text_area(
-                "可选：简单介绍一下你自己，系统会一起看你和这份 JD 的差距",
-                key="jd_user_summary",
-                height=120,
-                placeholder="可以简单写：你现在做什么、做过哪些项目、用过哪些 AI 工具、有什么数据结果、想转什么方向。\n例如：我有 2 年内容运营经验，做过公众号/短视频策划和社群转化，用过 ChatGPT/DeepSeek 做内容生成，但还没有完整 AI 产品项目。\n如果你还没整理好，也可以先留空，系统会先单独解读 JD。",
-                help="这里不是必填。填写后，系统会结合你的经历，判断你和这个岗位的匹配点、差距和准备重点。",
-            )
+            jd_text = st.text_area("目标岗位 JD", key="jd_text", height=300)
             jd_submitted = st.form_submit_button("生成 JD 解读报告", type="primary", use_container_width=True)
 
         if jd_submitted:
-            profile_context = user_summary or build_profile_context_for_agent() or "用户暂未提供背景，请先按通用 AI PM 候选人标准解读 JD，并标注后续需要补充的信息。"
+            profile_context = build_profile_context_for_agent() or "用户暂未提供背景，请先按通用 AI PM 候选人标准解读 JD，并标注后续需要补充的信息。"
             if len(jd_text.strip()) < 80:
                 st.warning("请补充更完整的 JD。JD 建议包含岗位职责和任职要求。")
             else:
