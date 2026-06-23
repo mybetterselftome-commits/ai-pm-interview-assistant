@@ -327,6 +327,59 @@ EXAMPLE_JD = """岗位：AI 产品经理
 4. 能清晰表达产品方案、技术边界和效果评估方法。"""
 EXAMPLE_ANSWER = "我做过一个内容增长项目。当时问题是内容选题比较依赖经验，用户点击和转化不稳定。我先分析了历史内容数据和用户搜索词，把选题分成高意图转化、品牌认知和社群互动三类，然后重构了选题库和发布节奏。结果单月阅读量提升约 35%，社群转化提升约 12%。如果迁移到 AI 产品场景，我会把它理解成一个内容策略智能化的问题：用 AI 辅助选题生成、标题改写和用户反馈分析，但会保留人工审核，避免内容质量和合规风险。"
 
+EXAMPLES = {
+    "内容运营转 AI 产品（你的背景）": {
+        "background": EXAMPLE_BACKGROUND,
+        "project": EXAMPLE_PROJECT,
+        "confusion": "不知道自己更适合 AI 产品经理还是 AI 产品运营，也不知道如何把内容运营经历包装成 AI 产品能力。",
+        "jd": EXAMPLE_JD,
+        "portfolio_goal": "想做一个能证明 AI 产品能力的小作品集，但不确定做 RAG、Agent 还是 AI 运营工具。",
+        "answer": EXAMPLE_ANSWER,
+        "mastery_topic": "RAG",
+        "mastery_explanation": "RAG 是检索增强生成，可以让大模型先查知识库再回答，减少幻觉。",
+    },
+    "教育培训转 AI 学习产品": {
+        "background": "我有 3 年职业教育/在线课程运营经验，负责过课程设计、学员社群、学习转化和完课率提升。熟悉用户学习路径和内容分层，也用过 ChatGPT 做教案、题库和课程大纲，但没有完整做过 AI 产品。",
+        "project": "曾负责一个数据分析课程的学习转化项目：通过梳理用户入门卡点，把原课程拆成预习、直播、作业、答疑和复盘 5 个环节，并设计打卡和助教提醒机制，完课率从 42% 提升到 61%，续费咨询率提升约 18%。希望把这段经历转译成 AI 学习产品能力。",
+        "confusion": "不知道教育运营经验能不能转成 AI 学习产品经理能力，也不知道作品集应该做 AI 助教、题库还是学习规划工具。",
+        "jd": """岗位：AI 学习产品经理
+职责：
+1. 负责 AI 学习助手、智能题库、个性化学习路径等产品方案设计；
+2. 基于学习数据和用户反馈优化学习效果、完课率和转化率；
+3. 设计 Prompt、知识库问答、学习诊断等 AI 能力，并推动工程、教研、运营协作落地；
+4. 建立学习效果评估指标，持续迭代产品体验。
+要求：
+1. 有教育、培训、知识付费或学习产品经验；
+2. 理解 LLM、RAG、Prompt 基础能力和边界；
+3. 具备用户研究、数据分析、产品方案设计能力；
+4. 能把教学场景转化成 AI 产品功能和评估指标。""",
+        "portfolio_goal": "想做一个 AI 学习助手作品集，证明自己能把教育场景、学习数据和 AI 能力结合起来。",
+        "answer": "我做过一个课程完课率提升项目。当时用户主要卡在入门阶段，课程内容多但缺少阶段反馈。我把学习路径拆成预习、直播、作业、答疑和复盘 5 个环节，设计了打卡提醒和助教跟进机制，完课率从 42% 提升到 61%。如果迁移到 AI 学习产品，我会考虑用 AI 做学习诊断、错题解释和个性化复习计划，但关键是要有学习效果指标，而不是只做聊天机器人。",
+        "mastery_topic": "AI 学习助手",
+        "mastery_explanation": "AI 学习助手可以根据用户问题提供讲解和练习建议，帮助用户更快理解知识点。",
+    },
+    "客服运营转 AI Agent 产品": {
+        "background": "我有 4 年客服运营和服务流程优化经验，负责过工单分类、FAQ 维护、客服质检和服务满意度提升。用过智能客服后台和知识库工具，对 Agent、Function Calling、RAG 只了解概念。",
+        "project": "曾主导一次客服工单分流优化：分析 3 个月工单数据，把问题分为账户、支付、物流、售后和投诉 5 类，重构 FAQ 和客服话术，并上线工单标签规则，使人工转接率下降约 15%，首次响应时长下降约 22%。希望转向 AI Agent/智能客服产品。",
+        "confusion": "我不确定客服运营经验如何证明 Agent 产品能力，也担心自己技术不够，不知道面试时怎么讲工具调用、兜底和权限边界。",
+        "jd": """岗位：AI Agent 产品经理
+职责：
+1. 负责智能客服 Agent 的任务流程、工具调用、知识库和人工兜底设计；
+2. 梳理用户服务场景，设计多轮对话、意图识别、工单流转和质检闭环；
+3. 与算法、工程、客服运营协作，提升问题解决率和用户满意度；
+4. 建立 Agent 任务完成率、转人工率、错误率、满意度等评估指标。
+要求：
+1. 理解 LLM、Agent、RAG、Function Calling 基础概念；
+2. 有客服、SaaS、工单、CRM 或服务流程经验优先；
+3. 能设计复杂流程、异常兜底和权限边界；
+4. 具备数据分析和跨团队推动能力。""",
+        "portfolio_goal": "想做一个智能客服 Agent 流程设计作品集，重点证明任务流程、工具调用失败兜底和转人工机制。",
+        "answer": "我做过客服工单分流优化。当时客服问题分散，很多简单问题也进入人工队列，导致响应慢。我分析了 3 个月工单，把问题拆成 5 类，重构 FAQ 和话术，并上线标签规则，人工转接率下降约 15%，首次响应时长下降约 22%。如果做 AI Agent，我会把它设计成先识别意图，再查询知识库，必要时调用订单或物流工具，失败时转人工。",
+        "mastery_topic": "Agent 工具调用",
+        "mastery_explanation": "Agent 工具调用就是让大模型在需要时调用外部工具，比如查订单、查物流或创建工单，从而完成用户任务。",
+    },
+}
+
 # ========== 数据库初始化 ==========
 init_db()
 
@@ -360,6 +413,7 @@ def init_state():
         "profile_background": "",
         "profile_project": "",
         "profile_confusion": "",
+        "selected_example": "内容运营转 AI 产品（你的背景）",
         "jd_text": "",
         "jd_user_summary": "",
         "portfolio_goal": "",
@@ -617,17 +671,19 @@ def summarize_assets(limit=8):
     return "\n".join(lines)
 
 
-def fill_example():
-    st.session_state.profile_background = EXAMPLE_BACKGROUND
-    st.session_state.profile_project = EXAMPLE_PROJECT
-    st.session_state.profile_confusion = "不知道自己更适合 AI 产品经理还是 AI 产品运营，也不知道如何把内容运营经历包装成 AI 产品能力。"
-    st.session_state.jd_text = EXAMPLE_JD
-    st.session_state.jd_user_summary = EXAMPLE_BACKGROUND + "\n" + EXAMPLE_PROJECT
-    st.session_state.portfolio_goal = "想做一个能证明 AI 产品能力的小作品集，但不确定做 RAG、Agent 还是 AI 运营工具。"
-    st.session_state.interview_answer = EXAMPLE_ANSWER
-    st.session_state.kb_search = "RAG 怎么讲给面试官听？"
-    st.session_state.mastery_topic = "RAG"
-    st.session_state.mastery_explanation = "RAG 是检索增强生成，可以让大模型先查知识库再回答，减少幻觉。"
+def fill_example(example_name=None):
+    example_name = example_name or st.session_state.get("selected_example") or next(iter(EXAMPLES))
+    example = EXAMPLES[example_name]
+    st.session_state.profile_background = example["background"]
+    st.session_state.profile_project = example["project"]
+    st.session_state.profile_confusion = example["confusion"]
+    st.session_state.jd_text = example["jd"]
+    st.session_state.jd_user_summary = example["background"] + "\n" + example["project"]
+    st.session_state.portfolio_goal = example["portfolio_goal"]
+    st.session_state.interview_answer = example["answer"]
+    st.session_state.kb_search = f"{example['mastery_topic']} 怎么讲给面试官听？"
+    st.session_state.mastery_topic = example["mastery_topic"]
+    st.session_state.mastery_explanation = example["mastery_explanation"]
 
 # ========== 顶部 ==========
 st.markdown("""
@@ -650,6 +706,13 @@ nav_items = [
 ]
 
 with st.sidebar:
+    st.markdown("### 示例背景")
+    selected_example = st.selectbox("选择一个行业样例", list(EXAMPLES.keys()), key="selected_example")
+    if st.button("填入所选示例", key="fill_selected_example", use_container_width=True):
+        fill_example(selected_example)
+        st.rerun()
+
+    st.markdown("---")
     st.markdown("### 求职证据流程")
     st.caption("按顺序推进，也可以随时跳转。")
     for section, num, text in nav_items:
@@ -672,8 +735,8 @@ if st.session_state.active_section == "JD解码":
     st.markdown('<div class="section-title">JD 解码：先看岗位到底要什么证据</div>', unsafe_allow_html=True)
     st.markdown('<div class="subtle-note">把 JD 原文拆成背后能力、证据标准、高风险追问和作品集可补证据。即使还没整理经历，也能先看懂岗位筛选逻辑。</div>', unsafe_allow_html=True)
 
-    if st.button("填入完整示例", key="jd_example"):
-        fill_example()
+    if st.button("填入所选示例", key="jd_example"):
+        fill_example(st.session_state.selected_example)
         st.rerun()
 
     with st.form("jd_decode_form"):
@@ -709,8 +772,8 @@ elif st.session_state.active_section == "经历转译":
     st.markdown('<div class="section-title">经历转译：把过往经历翻译成 AI PM 能力证据</div>', unsafe_allow_html=True)
     st.markdown('<div class="subtle-note">系统会引用 JD 证据地图，判断哪些经历能写进简历、能讲成面试故事、能支撑作品集，哪些不能过度包装。</div>', unsafe_allow_html=True)
 
-    if st.button("填入完整示例", key="profile_example"):
-        fill_example()
+    if st.button("填入所选示例", key="profile_example"):
+        fill_example(st.session_state.selected_example)
         st.rerun()
 
     if st.session_state.jd_result:
