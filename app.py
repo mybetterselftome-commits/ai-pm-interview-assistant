@@ -734,10 +734,19 @@ with toggle_col:
         <script>
         const btn = document.getElementById('railToggle');
         let hidden = false;
+        function closestByTestId(el, testId) {
+          let node = el;
+          while (node && node !== window.parent.document.body) {
+            if (node.getAttribute && node.getAttribute('data-testid') === testId) return node;
+            node = node.parentElement;
+          }
+          return null;
+        }
         function getColumns() {
           const frame = window.frameElement;
-          const toggleCol = frame && frame.closest('[data-testid="column"]');
-          const block = toggleCol && toggleCol.parentElement;
+          if (!frame) return null;
+          const toggleCol = closestByTestId(frame, 'column');
+          const block = closestByTestId(toggleCol, 'stHorizontalBlock');
           if (!block) return null;
           const cols = Array.from(block.children).filter(el => el.getAttribute('data-testid') === 'column');
           return cols.length >= 3 ? {left: cols[0], toggle: cols[1], main: cols[2]} : null;
