@@ -848,6 +848,35 @@ def fill_example(example_name=None):
     st.session_state.mastery_explanation = example["mastery_explanation"]
 
 
+def build_contextual_interview_answer():
+    background = st.session_state.get("profile_background", "")
+    project = st.session_state.get("profile_project", "")
+    portfolio_goal = st.session_state.get("portfolio_goal", "")
+    context = f"{background}\n{project}\n{portfolio_goal}"
+
+    if any(word in context for word in ["建筑", "商务", "成本", "合同", "分包", "结算", "工程量", "签证"]):
+        return (
+            "我做过一个项目月度成本分析相关工作。当时业务问题是项目成本数据分散在合同、产值、分包结算、材料采购和现场签证里，"
+            "商务人员需要花很多时间手工整理，才能判断哪些费用出现偏差。我参与整理合同金额、已完产值、分包结算、材料采购和现场签证数据，"
+            "对比目标成本和实际成本，定位钢筋、混凝土、劳务等费用偏差，并协助输出月度成本分析表和风险提示。"
+            "如果迁移到 AI 产品场景，我会把它设计成一个工程成本分析助手：先结构化读取成本台账和合同资料，再自动提示异常费用、可能原因和需要人工复核的条目。"
+            "如果结合我的作品集方向，可以做一个 AI 工程成本分析助手原型，重点展示资料上传、费用偏差识别、风险解释和人工确认流程。"
+        )
+    if any(word in context for word in ["客服", "工单", "FAQ", "售后", "投诉", "转人工"]):
+        return (
+            "我做过一个客服工单分流优化项目。当时客服问题分散，很多简单问题也进入人工队列，导致响应慢。"
+            "我分析了 3 个月工单数据，把问题分为账户、支付、物流、售后和投诉 5 类，重构 FAQ 和客服话术，并上线工单标签规则，"
+            "使人工转接率下降约 15%，首次响应时长下降约 22%。如果迁移到 AI 产品场景，我会把它设计成一个智能客服 Agent："
+            "先识别用户意图，再检索知识库，必要时调用订单或物流工具，失败时转人工。作品集上可以重点展示 Agent 流程、工具调用失败兜底和转人工机制。"
+        )
+    return (
+        "我做过一个内容增长项目。当时问题是内容选题比较依赖经验，用户点击和转化不稳定。"
+        "我先分析了历史内容数据和用户搜索词，把选题分成高意图转化、品牌认知和社群互动三类，然后重构了选题库和发布节奏。"
+        "结果单月阅读量提升约 35%，社群转化提升约 12%。如果迁移到 AI 产品场景，我会把它理解成一个内容策略智能化的问题："
+        "用 AI 辅助选题生成、标题改写和用户反馈分析，但会保留人工审核，避免内容质量和合规风险。作品集方向可以做一个 AI 内容策略助手原型。"
+    )
+
+
 def render_example_buttons(key_prefix):
     labels = [
         ("填入示例1", "内容运营"),
@@ -1088,8 +1117,7 @@ with main_col:
                 if st.button("填入示例回答", use_container_width=True):
                     if not st.session_state.interview_question:
                         st.session_state.interview_question = question_bank[0]
-                    current_example = EXAMPLES.get(st.session_state.get("selected_example"), EXAMPLES[next(iter(EXAMPLES))])
-                    st.session_state.interview_answer = current_example["answer"]
+                    st.session_state.interview_answer = build_contextual_interview_answer()
                     st.rerun()
             with col_c:
                 if st.button("清空本轮", use_container_width=True):
