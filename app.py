@@ -265,8 +265,8 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 CAREER_PATHS = {
+    "通用 AI 产品岗": ["LLM 基础", "RAG 产品方案", "Agent 工作流", "Prompt 工程", "模型评估", "产品指标"],
     "AI 产品经理": ["LLM 基础", "RAG 产品方案", "Agent 工作流", "模型评估", "AI 产品流程", "人机协同"],
-    "AI 产品运营": ["数据指标", "用户增长", "内容运营", "A/B 测试", "模型效果监控", "用户反馈闭环"],
     "Agent 产品经理": ["Agent 架构", "Tool Use", "任务规划", "记忆管理", "异常兜底", "权限与安全"],
     "AIGC 产品经理": ["生成式 AI", "内容质量控制", "版权与合规", "多模态能力", "创作流程", "商业化场景"],
 }
@@ -280,9 +280,9 @@ KNOWLEDGE_BASE = {
         "说明": "考察你能否把 AI 技术转化成真实产品方案。",
         "知识点": ["AI 产品流程", "自研 vs 调 API", "模型选型", "人机协同", "兜底策略", "成本与延迟", "产品指标", "灰度发布"],
     },
-    "AI 运营增长": {
-        "说明": "适合 AI 产品运营方向，关注上线后的增长、内容和效果监控。",
-        "知识点": ["用户增长", "数据指标", "内容运营", "A/B 测试", "用户反馈闭环", "模型效果监控", "内容质量控制", "合规审核"],
+    "增长与反馈": {
+        "说明": "考察你是否理解产品上线后的用户反馈、效果监控和持续迭代。",
+        "知识点": ["用户反馈闭环", "数据指标", "A/B 测试", "模型效果监控", "内容质量控制", "合规审核"],
     },
     "面试表达": {
         "说明": "把经历讲成面试官能认可的产品能力。",
@@ -291,15 +291,15 @@ KNOWLEDGE_BASE = {
 }
 
 INTERVIEW_QUESTIONS = {
+    "通用 AI 产品岗": [
+        "请介绍一个你做过的项目，并说明它可以如何迁移到 AI 产品场景。",
+        "如果要把一个传统业务流程改造成 AI 产品，你会如何判断适不适合用 AI？",
+        "你如何评估一个 AI 功能是否真的解决了用户问题？",
+    ],
     "AI 产品经理": [
         "请介绍一个你做过或设计过的 AI 产品项目，并说明为什么这个场景适合用 AI。",
         "如果模型效果不稳定，你作为产品经理会如何定位问题并推动优化？",
         "RAG 和模型微调分别适合什么场景？你会如何做选型？",
-    ],
-    "AI 产品运营": [
-        "AI 产品上线后，你会重点关注哪些运营指标？为什么？",
-        "如果 AIGC 内容质量不稳定，你会如何设计运营和产品机制？",
-        "你如何把用户反馈转化为模型和产品迭代依据？",
     ],
     "Agent 产品经理": [
         "请设计一个 AI Agent 的核心工作流，并说明它和普通聊天机器人的区别。",
@@ -332,7 +332,7 @@ EXAMPLES = {
     "内容运营转 AI 产品（你的背景）": {
         "background": EXAMPLE_BACKGROUND,
         "project": EXAMPLE_PROJECT,
-        "confusion": "不知道自己更适合 AI 产品经理还是 AI 产品运营，也不知道如何把内容运营经历包装成 AI 产品能力。",
+        "confusion": "不知道自己更适合通用 AI 产品岗还是更垂直的 AI 产品经理方向，也不知道如何把内容运营经历包装成 AI 产品能力。",
         "jd": EXAMPLE_JD,
         "portfolio_goal": "想做一个能证明 AI 产品能力的小作品集，但不确定做 RAG、Agent 还是 AI 运营工具。",
         "answer": EXAMPLE_ANSWER,
@@ -896,10 +896,10 @@ with main_col:
         if st.session_state.jd_result:
             st.caption("✅ 已检测到 JD 解读报告，本模块会自动引用前 1500 字作为岗位材料上下文。")
         else:
-            st.caption("提示：可以先做 JD 解码；也可以直接转译经历，系统会按目标岗位方向处理。")
+            st.caption("提示：可以先做 JD 解码；也可以直接转译经历，系统会按你更想准备哪类岗位？处理。")
 
         current_background = st.text_area("你的过往背景", key="profile_background", height=120)
-        target_role = st.selectbox("目标岗位方向", list(CAREER_PATHS.keys()), key="profile_target_role")
+        target_role = st.selectbox("你更想准备哪类岗位？", list(CAREER_PATHS.keys()), key="profile_target_role")
         ai_level = st.select_slider("AI 基础水平", options=["完全小白", "了解概念", "用过 AI 工具", "做过 AI 项目", "能独立设计 AI 产品方案"], key="profile_ai_level")
         product_experience = st.text_area("你已有的项目/产品/运营经历", key="profile_project", height=110)
         biggest_confusion = st.text_input("当前最大困惑", key="profile_confusion")
@@ -944,7 +944,7 @@ with main_col:
         context_cols[1].metric("经历转译", "已生成" if st.session_state.profile_result else "未生成")
         context_cols[2].metric("短板标签", len(st.session_state.weakness_tags))
 
-        target_role = st.selectbox("目标岗位方向", list(CAREER_PATHS.keys()), key="portfolio_target_role")
+        target_role = st.selectbox("你更想准备哪类岗位？", list(CAREER_PATHS.keys()), key="portfolio_target_role")
         time_budget = st.selectbox("可投入时间", ["3 天", "7 天", "14 天", "30 天"], key="portfolio_time_budget")
         tech_level = st.selectbox(
             "技术实现水平",
@@ -1216,7 +1216,7 @@ with main_col:
         st.markdown('<div class="subtle-note">这里不再做大面积知识库展示，只判断一个知识点是否达到面试可用、产品可用、抗追问可用的深度。</div>', unsafe_allow_html=True)
 
         topic = st.text_input("要自测的知识点", key="mastery_topic", placeholder="例如：RAG、Agent、模型评估、Prompt 工程")
-        target_role = st.selectbox("目标岗位方向", list(CAREER_PATHS.keys()), key="mastery_target_role")
+        target_role = st.selectbox("你更想准备哪类岗位？", list(CAREER_PATHS.keys()), key="mastery_target_role")
         user_explanation = st.text_area("先用你自己的话解释这个知识点", key="mastery_explanation", height=150, placeholder="不要复制定义，按你面试时会怎么说来写。")
         mastery_voice = realtime_speech(
             target_label="先用你自己的话解释这个知识点",
@@ -1246,7 +1246,7 @@ with main_col:
         st.markdown(f'<div class="subtle-note">资产已按设备 ID 持久化保存。当前设备：<code>{st.session_state.device_id}</code>。把当前页面 URL 收藏，下次回来资产仍在。</div>', unsafe_allow_html=True)
 
         st.markdown("#### 生成下一轮补强闭环")
-        target_role = st.selectbox("目标岗位方向", list(CAREER_PATHS.keys()), key="loop_target_role")
+        target_role = st.selectbox("你更想准备哪类岗位？", list(CAREER_PATHS.keys()), key="loop_target_role")
         target_goal = st.selectbox("近期目标", ["本周投递", "准备面试", "补作品集", "补 AI 技术理解", "重写简历"], key="loop_goal")
         time_budget = st.selectbox("可投入时间", ["3 天", "7 天", "14 天", "30 天"], key="loop_time_budget")
         loop_submitted = st.button("生成补强闭环计划", type="primary", use_container_width=True)

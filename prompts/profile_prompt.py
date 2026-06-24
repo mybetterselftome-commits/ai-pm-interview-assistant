@@ -44,7 +44,7 @@ def build_user_prompt(current_background, target_role, ai_level, product_experie
 请严格按以下结构输出 Markdown：
 
 ## 1. 求职定位结论
-- 推荐方向：{{从 AI 应用产品经理 / 大模型应用产品经理 / RAG·知识库产品经理 / Agent 产品经理 / AI 产品运营 / AIGC 产品经理 / AI 数据·策略产品经理 中选 1-2 个}}
+- 推荐方向：{{从 通用 AI 产品岗 / AI 应用产品经理 / 大模型应用产品经理 / RAG·知识库产品经理 / Agent 产品经理 / AIGC 产品经理 / AI 数据·策略产品经理 中选 1-2 个}}
 - 可冲刺方向：
 - 暂不建议方向：
 - 当前阶段判断：可投递 / 需补强后投递 / 暂不建议投递
