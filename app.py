@@ -177,6 +177,39 @@ st.markdown("""
         line-height: 1.72;
         overflow-x: auto;
     }
+    .result-card {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        padding: 1rem 1.05rem;
+        box-shadow: 0 8px 22px rgba(15, 23, 42, 0.045);
+        min-height: 128px;
+    }
+    .result-card .eyebrow {
+        color: #6366f1;
+        font-size: 0.76rem;
+        font-weight: 900;
+        letter-spacing: 0.02em;
+        margin-bottom: 0.45rem;
+    }
+    .result-card .body {
+        color: #111827;
+        font-size: 0.92rem;
+        line-height: 1.65;
+    }
+    .result-section-title {
+        font-weight: 900;
+        color: #111827;
+        margin: 1.05rem 0 0.55rem 0;
+        font-size: 1.02rem;
+    }
+    .action-list {
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        padding: 0.9rem 1rem;
+        line-height: 1.7;
+    }
     .result-box table {
         width: 100%;
         min-width: 980px;
@@ -599,10 +632,76 @@ def add_feedback(module, value):
     st.session_state.feedback = list_feedback(device_id)
 
 
+def clean_markdown_line(line):
+    line = re.sub(r"^#{1,6}\s*", "", line.strip())
+    line = re.sub(r"^[-*]\s*", "", line)
+    line = re.sub(r"^\d+[.)]\s*", "", line)
+    return line.strip()
+
+
+def extract_result_preview(markdown_text):
+    lines = [line.rstrip() for line in markdown_text.splitlines()]
+    content_lines = []
+    action_lines = []
+    reusable_lines = []
+    skip_prefixes = ("|", "```")
+
+    for line in lines:
+        stripped = line.strip()
+        if not stripped or stripped.startswith(skip_prefixes):
+            continue
+        clean = clean_markdown_line(stripped)
+        if not clean or clean in ("---",):
+            continue
+        if len(content_lines) < 4 and not stripped.startswith("|"):
+            content_lines.append(clean)
+
+        if any(word in clean for word in ["下一步", "建议", "准备", "补强", "任务", "优先", "风险"]):
+            if len(action_lines) < 5:
+                action_lines.append(clean)
+
+        if any(word in clean for word in ["能力描述", "30 秒", "90 秒", "面试回答", "作品集", "简历"]):
+            if len(reusable_lines) < 4:
+                reusable_lines.append(clean)
+
+    if not action_lines:
+        action_lines = content_lines[1:4]
+    if not reusable_lines:
+        reusable_lines = content_lines[:3]
+
+    return {
+        "summary": content_lines[:3] or ["已生成分析结果，可展开查看完整报告。"],
+        "actions": action_lines[:5],
+        "reusable": reusable_lines[:4],
+    }
+
+
+def render_result_card(title, items):
+    body = "<br/>".join(f"• {item}" for item in items if item)
+    if not body:
+        body = "暂无可提取内容，请展开完整报告查看。"
+    st.markdown(
+        f'<div class="result-card"><div class="eyebrow">{title}</div><div class="body">{body}</div></div>',
+        unsafe_allow_html=True,
+    )
+
+
 def render_result(markdown_text, asset_type=None, asset_title=None, feedback_module=None, key_prefix="result", next_section=None, next_label=None):
     if not markdown_text:
         return
-    st.markdown(markdown_text)
+
+    preview = extract_result_preview(markdown_text)
+    st.markdown('<div class="result-section-title">先看重点</div>', unsafe_allow_html=True)
+    card1, card2, card3 = st.columns(3)
+    with card1:
+        render_result_card("结果摘要", preview["summary"])
+    with card2:
+        render_result_card("下一步建议", preview["actions"])
+    with card3:
+        render_result_card("可直接复用", preview["reusable"])
+
+    with st.expander("查看完整报告", expanded=False):
+        st.markdown(markdown_text)
 
     col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
     with col1:
