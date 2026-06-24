@@ -1088,7 +1088,8 @@ with main_col:
                 if st.button("填入示例回答", use_container_width=True):
                     if not st.session_state.interview_question:
                         st.session_state.interview_question = question_bank[0]
-                    st.session_state.interview_answer = EXAMPLE_ANSWER
+                    current_example = EXAMPLES.get(st.session_state.get("selected_example"), EXAMPLES[next(iter(EXAMPLES))])
+                    st.session_state.interview_answer = current_example["answer"]
                     st.rerun()
             with col_c:
                 if st.button("清空本轮", use_container_width=True):
