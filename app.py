@@ -848,6 +848,21 @@ def fill_example(example_name=None):
     st.session_state.mastery_explanation = example["mastery_explanation"]
 
 
+def build_contextual_portfolio_goal():
+    background = st.session_state.get("profile_background", "") or ""
+    project = st.session_state.get("profile_project", "") or ""
+    jd_text = st.session_state.get("jd_text", "") or ""
+    context = f"{background}\n{project}\n{jd_text}"
+
+    if any(word in context for word in ["建筑", "商务", "成本", "合同", "分包", "结算", "工程量", "签证"]):
+        return "想做一个 AI 工程成本分析助手，重点证明我能把合同、成本台账、分包结算、材料价格和签证变更等工程资料，转成可分析、可预警、可复核的 AI 产品流程。"
+    if any(word in context for word in ["客服", "工单", "FAQ", "售后", "投诉", "转人工"]):
+        return "想做一个智能客服 Agent 原型，重点证明我能把工单分流、知识库问答、工具调用和转人工兜底设计成完整的 AI 产品流程。"
+    if any(word in context for word in ["内容", "社群", "短视频", "公众号", "选题", "转化"]):
+        return "想做一个 AI 内容策略助手，重点证明我能把内容选题、标题优化、用户反馈分析和人工审核流程设计成可落地的 AI 产品方案。"
+    return "想做一个小型 AI 产品原型，重点证明我能从真实业务问题出发，设计用户流程、AI 能力介入方式、效果指标和失败兜底机制。"
+
+
 def build_contextual_interview_answer():
     background = (st.session_state.get("profile_background") or "").strip()
     project = (st.session_state.get("profile_project") or "").strip()
@@ -1033,6 +1048,9 @@ with main_col:
             ["只会用 AI 工具", "会简单 Streamlit / Python", "会 API 调用", "能做前后端原型", "已有完整项目经验"],
             key="portfolio_tech_level",
         )
+        if st.button("填入一个相关示例方向", key="portfolio_goal_example", use_container_width=True):
+            st.session_state.portfolio_goal = build_contextual_portfolio_goal()
+            st.rerun()
         portfolio_goal = st.text_area("你想证明的能力 / 想做的方向（可选）", key="portfolio_goal", height=100)
         portfolio_submitted = st.button("生成作品集材料方案", type="primary", use_container_width=True)
 
