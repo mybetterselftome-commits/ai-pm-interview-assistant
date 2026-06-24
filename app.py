@@ -709,15 +709,24 @@ nav_items = [
     ("补强闭环/我的资产", "05", "沉淀下一步"),
 ]
 
-left_col, main_col = st.columns([0.18, 0.82], gap="large")
-with left_col:
-    st.markdown('<div class="rail-brand">AI PM 求职准备工作台</div>', unsafe_allow_html=True)
-    st.markdown('<div class="rail-subtitle">AI PM 面试准备助手<br/>从 JD 到面试，一步步准备</div>', unsafe_allow_html=True)
-    for section, num, text in nav_items:
-        active_mark = "● " if st.session_state.active_section == section else ""
-        if st.button(f"{active_mark}{num} {section}", key=f"nav_{section}", use_container_width=True):
-            st.session_state.active_section = section
-            st.rerun()
+if st.session_state.show_left_nav:
+    left_col, toggle_col, main_col = st.columns([0.18, 0.035, 0.785], gap="small")
+    with left_col:
+        st.markdown('<div class="rail-brand">AI PM 求职准备工作台</div>', unsafe_allow_html=True)
+        st.markdown('<div class="rail-subtitle">AI PM 面试准备助手<br/>从 JD 到面试，一步步准备</div>', unsafe_allow_html=True)
+        for section, num, text in nav_items:
+            active_mark = "● " if st.session_state.active_section == section else ""
+            if st.button(f"{active_mark}{num} {section}", key=f"nav_{section}", use_container_width=True):
+                st.session_state.active_section = section
+                st.rerun()
+else:
+    toggle_col, main_col = st.columns([0.035, 0.965], gap="small")
+
+with toggle_col:
+    toggle_icon = "‹" if st.session_state.show_left_nav else "›"
+    if st.button(toggle_icon, key="toggle_left_nav", help="隐藏/展开目录"):
+        st.session_state.show_left_nav = not st.session_state.show_left_nav
+        st.rerun()
 
 with main_col:
 
