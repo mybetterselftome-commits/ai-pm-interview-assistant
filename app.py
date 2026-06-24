@@ -4,6 +4,7 @@ import re
 import json
 import time
 import uuid
+import html
 from datetime import datetime
 
 import httpx
@@ -599,6 +600,121 @@ def add_feedback(module, value):
     st.session_state.feedback = list_feedback(device_id)
 
 
+def markdown_to_html(title, markdown_text):
+    """Convert the generated Markdown report into a self-contained HTML file."""
+    title = html.escape(title or "AI 输出结果")
+    body_parts = []
+    lines = markdown_text.splitlines()
+    in_ul = False
+    in_ol = False
+    i = 0
+
+    def close_lists():
+        nonlocal in_ul, in_ol
+        if in_ul:
+            body_parts.append("</ul>")
+            in_ul = False
+        if in_ol:
+            body_parts.append("</ol>")
+            in_ol = False
+
+    while i < len(lines):
+        raw = lines[i]
+        line = raw.strip()
+        if not line:
+            close_lists()
+            i += 1
+            continue
+
+        if line.startswith("|") and i + 1 < len(lines) and lines[i + 1].strip().startswith("|"):
+            close_lists()
+            table_rows = []
+            while i < len(lines) and lines[i].strip().startswith("|"):
+                cells = [html.escape(cell.strip()) for cell in lines[i].strip().strip("|").split("|")]
+                if not all(re.fullmatch(r"[:\-\s]+", cell) for cell in cells):
+                    table_rows.append(cells)
+                i += 1
+            if table_rows:
+                body_parts.append("<table>")
+                for row_index, cells in enumerate(table_rows):
+                    tag = "th" if row_index == 0 else "td"
+                    body_parts.append("<tr>" + "".join(f"<{tag}>{cell}</{tag}>" for cell in cells) + "</tr>")
+                body_parts.append("</table>")
+            continue
+
+        heading = re.match(r"^(#{1,6})\s+(.*)$", line)
+        if heading:
+            close_lists()
+            level = min(len(heading.group(1)), 4)
+            body_parts.append(f"<h{level}>{html.escape(heading.group(2))}</h{level}>")
+            i += 1
+            continue
+
+        bullet = re.match(r"^[-*]\s+(.*)$", line)
+        if bullet:
+            if in_ol:
+                body_parts.append("</ol>")
+                in_ol = False
+            if not in_ul:
+                body_parts.append("<ul>")
+                in_ul = True
+            body_parts.append(f"<li>{html.escape(bullet.group(1))}</li>")
+            i += 1
+            continue
+
+        numbered = re.match(r"^\d+[.)]\s+(.*)$", line)
+        if numbered:
+            if in_ul:
+                body_parts.append("</ul>")
+                in_ul = False
+            if not in_ol:
+                body_parts.append("<ol>")
+                in_ol = True
+            body_parts.append(f"<li>{html.escape(numbered.group(1))}</li>")
+            i += 1
+            continue
+
+        close_lists()
+        text = html.escape(line)
+        text = re.sub(r"\*\*(.*?)\*\*", r"<strong>\1</strong>", text)
+        body_parts.append(f"<p>{text}</p>")
+        i += 1
+
+    close_lists()
+    body = "\n".join(body_parts)
+    return f"""<!doctype html>
+<html lang=\"zh-CN\">
+<head>
+<meta charset=\"utf-8\" />
+<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
+<title>{title}</title>
+<style>
+body {{ margin: 0; background: #f7f8fb; color: #111827; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.72; }}
+.container {{ max-width: 1080px; margin: 40px auto; background: #fff; border: 1px solid #e5e7eb; border-radius: 18px; padding: 40px 46px; box-shadow: 0 18px 48px rgba(15,23,42,.08); }}
+h1 {{ font-size: 30px; margin: 0 0 24px; letter-spacing: -0.03em; }}
+h2 {{ font-size: 24px; margin: 34px 0 14px; padding-top: 12px; border-top: 1px solid #e5e7eb; }}
+h3 {{ font-size: 19px; margin: 26px 0 10px; }}
+h4 {{ font-size: 16px; margin: 18px 0 8px; }}
+p {{ margin: 10px 0; }}
+ul, ol {{ padding-left: 1.4rem; margin: 10px 0; }}
+li {{ margin: 6px 0; }}
+table {{ width: 100%; border-collapse: collapse; margin: 18px 0 24px; font-size: 14px; }}
+th {{ background: #f8fafc; font-weight: 800; }}
+th, td {{ border: 1px solid #e5e7eb; padding: 10px 12px; vertical-align: top; }}
+strong {{ font-weight: 850; }}
+.meta {{ color: #6b7280; font-size: 13px; margin-bottom: 26px; }}
+</style>
+</head>
+<body>
+<div class=\"container\">
+<h1>{title}</h1>
+<div class=\"meta\">由 AI PM 求职准备工作台导出</div>
+{body}
+</div>
+</body>
+</html>"""
+
+
 def render_result(markdown_text, asset_type=None, asset_title=None, feedback_module=None, key_prefix="result", next_section=None, next_label=None):
     if not markdown_text:
         return
@@ -611,10 +727,10 @@ def render_result(markdown_text, asset_type=None, asset_title=None, feedback_mod
             st.success("已保存到我的求职资产库")
     with col2:
         st.download_button(
-            "导出 Markdown",
-            data=f"# {asset_title or asset_type or 'AI 输出结果'}\n\n{markdown_text}",
-            file_name=f"{key_prefix}_result.md",
-            mime="text/markdown",
+            "导出 HTML",
+            data=markdown_to_html(asset_title or asset_type or "AI 输出结果", markdown_text),
+            file_name=f"{key_prefix}_result.html",
+            mime="text/html",
             key=f"{key_prefix}_download",
             use_container_width=True,
         )
@@ -1180,18 +1296,18 @@ with main_col:
             col_export1, col_export2 = st.columns(2)
             with col_export1:
                 st.download_button(
-                    "下载全部资产 Markdown",
-                    data=export_text,
-                    file_name="ai_pm_evidence_assets.md",
-                    mime="text/markdown",
+                    "下载全部资产 HTML",
+                    data=markdown_to_html("AI PM 求职准备材料", export_text),
+                    file_name="ai_pm_assets.html",
+                    mime="text/html",
                     use_container_width=True,
                 )
             with col_export2:
                 st.download_button(
-                    "生成并下载面试准备稿",
-                    data=interview_pack,
-                    file_name="ai_pm_interview_pack.md",
-                    mime="text/markdown",
+                    "生成并下载面试准备稿 HTML",
+                    data=markdown_to_html("AI PM 面试准备稿", interview_pack),
+                    file_name="ai_pm_interview_pack.html",
+                    mime="text/html",
                     use_container_width=True,
                 )
 
