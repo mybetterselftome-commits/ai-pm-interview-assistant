@@ -179,34 +179,64 @@ st.markdown("""
         overflow-x: auto;
     }
     .result-box table {
+        display: block;
         width: 100%;
         min-width: 980px;
-        border-collapse: collapse;
-        margin: 0.8rem 0 1rem 0;
-        font-size: 0.92rem;
-        table-layout: fixed;
+        overflow-x: auto;
+        border-collapse: separate;
+        border-spacing: 0;
+        margin: 1rem 0 1.2rem 0;
+        font-size: 0.9rem;
+        table-layout: auto;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
     }
-    .result-box th {
+    .result-box th,
+    div[data-testid="stMarkdown"] table th {
         background: #f8fafc;
         color: #111827;
         font-weight: 850;
         border: 1px solid #e5e7eb;
-        padding: 0.7rem 0.75rem;
+        padding: 0.85rem 0.9rem;
         text-align: left;
-        white-space: nowrap;
+        white-space: normal;
+        min-width: 140px;
+        line-height: 1.55;
     }
-    .result-box td {
+    .result-box td,
+    div[data-testid="stMarkdown"] table td {
         border: 1px solid #e5e7eb;
-        padding: 0.75rem;
+        padding: 0.9rem;
         vertical-align: top;
         color: #111827;
         word-break: normal;
-        overflow-wrap: break-word;
+        overflow-wrap: anywhere;
+        white-space: normal;
+        min-width: 150px;
+        max-width: 420px;
+        line-height: 1.65;
     }
-    .result-box th:nth-child(1), .result-box td:nth-child(1) { width: 14%; min-width: 110px; font-weight: 800; }
-    .result-box th:nth-child(2), .result-box td:nth-child(2) { width: 9%; min-width: 80px; text-align: center; font-weight: 850; color: #4f46e5; white-space: nowrap; }
-    .result-box th:nth-child(3), .result-box td:nth-child(3) { width: 37%; }
-    .result-box th:nth-child(4), .result-box td:nth-child(4) { width: 40%; }
+    div[data-testid="stMarkdown"] table {
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        min-width: 980px;
+        overflow-x: auto;
+        border-collapse: separate;
+        border-spacing: 0;
+        margin: 1rem 0 1.3rem 0;
+        font-size: 0.9rem;
+        table-layout: auto;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        background: #fff;
+    }
+    div[data-testid="stMarkdown"] table tr:nth-child(even) td { background: #fbfdff; }
+    div[data-testid="stMarkdown"] table th:first-child,
+    div[data-testid="stMarkdown"] table td:first-child {
+        min-width: 130px;
+        font-weight: 800;
+    }
     .asset-box {
         background: #ffffff;
         border: 1px solid #e5e7eb;
