@@ -491,7 +491,7 @@ if not st.session_state.db_loaded:
     st.session_state.db_loaded = True
 
 # ========== Helpers ==========
-def call_ai(system_prompt, user_prompt):
+def call_ai(system_prompt, user_prompt, live_placeholder=None):
     if not api_key:
         st.error("未检测到 DeepSeek API Key，请先配置 DEEPSEEK_API_KEY。")
         st.stop()
@@ -502,19 +502,34 @@ def call_ai(system_prompt, user_prompt):
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
-            stream=False,
+            stream=True,
         )
-        return response.choices[0].message.content
+        chunks = []
+        last_update = 0
+        for chunk in response:
+            delta = chunk.choices[0].delta.content if chunk.choices and chunk.choices[0].delta else ""
+            if not delta:
+                continue
+            chunks.append(delta)
+            now = time.time()
+            if live_placeholder is not None and now - last_update > 0.15:
+                live_placeholder.markdown("".join(chunks) + "▌")
+                last_update = now
+        result = "".join(chunks)
+        if live_placeholder is not None:
+            live_placeholder.markdown(result)
+        return result
     except Exception as exc:
         st.error(f"生成失败：{exc}")
         return ""
 
 
 def call_ai_with_progress(system_prompt, user_prompt, title="正在生成", steps=None):
-    """Show staged progress while waiting for the model response."""
+    """Show staged progress while streaming the model response."""
     steps = steps or ["理解输入", "拆解任务", "调用模型", "整理结果"]
     progress = st.progress(0)
     status = st.empty()
+    live_output = st.empty()
 
     for pct, step in zip([12, 28, 45], steps[:3]):
         progress.progress(pct, text=f"{title}：{step}... {pct}%")
@@ -522,8 +537,8 @@ def call_ai_with_progress(system_prompt, user_prompt, title="正在生成", step
         time.sleep(0.25)
 
     progress.progress(62, text=f"{title}：模型正在生成结果... 62%")
-    status.caption("模型正在生成结果，大约需要 60 秒，请稍等。")
-    result = call_ai(system_prompt, user_prompt)
+    status.caption("模型正在生成结果，内容会实时显示，请稍等。")
+    result = call_ai(system_prompt, user_prompt, live_placeholder=live_output)
 
     progress.progress(88, text=f"{title}：整理输出结构... 88%")
     status.caption("正在整理输出结构...")
@@ -533,6 +548,7 @@ def call_ai_with_progress(system_prompt, user_prompt, title="正在生成", step
     time.sleep(0.35)
     progress.empty()
     status.empty()
+    live_output.empty()
     return result
 
 
