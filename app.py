@@ -1024,6 +1024,37 @@ def build_contextual_interview_answer():
     )
 
 
+def generate_ai_interview_example_answer(role, question):
+    context = "\n\n".join(
+        part for part in [
+            build_profile_context_for_agent(),
+            build_evidence_context("引用全部上下文"),
+            f"## 当前作品集方向\n{st.session_state.get('portfolio_goal', '')}",
+        ] if part.strip()
+    )
+    system_prompt = """你是一位 AI 产品岗面试辅导教练。请根据候选人的真实背景、当前面试题和作品集方向，生成一段可以放进回答框的示例回答。
+
+要求：
+1. 必须紧扣当前面试题，不要生成通用项目介绍。
+2. 必须结合候选人已有背景、项目经历和作品集方向。
+3. 不要编造没有提供的数据、公司、用户量或模型效果；缺失处用「待补充」表达。
+4. 回答长度控制在 180-260 字。
+5. 用第一人称，像候选人口头回答，不要写成报告，不要使用 Markdown 标题。"""
+    user_prompt = f"""
+目标岗位：{role}
+当前面试题：{question}
+
+候选人上下文：
+{context or '用户尚未提供充分背景，请生成一段通用但不编造的回答。'}
+
+请生成一段匹配当前题目的示例回答。
+"""
+    generated = call_ai_raw(system_prompt, user_prompt, temperature=0.4)
+    if generated and not generated.startswith("[生成失败"):
+        return generated.strip()
+    return build_contextual_interview_answer()
+
+
 def render_example_buttons(key_prefix):
     labels = [
         ("填入示例1", "内容运营"),
@@ -1262,7 +1293,8 @@ with main_col:
                 if st.button("填入示例回答", use_container_width=True):
                     if not st.session_state.interview_question:
                         st.session_state.interview_question = random.choice(question_bank)
-                    st.session_state.interview_answer = build_contextual_interview_answer()
+                    with st.spinner("正在根据当前题目和前面内容生成示例回答..."):
+                        st.session_state.interview_answer = generate_ai_interview_example_answer(role, st.session_state.interview_question)
                     st.rerun()
             with col_c:
                 if st.button("清空本轮", use_container_width=True):
