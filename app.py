@@ -900,7 +900,17 @@ with main_col:
 
         current_background = st.text_area("你的过往背景", key="profile_background", height=120)
         target_role = st.selectbox("你更想准备哪类岗位？", list(CAREER_PATHS.keys()), key="profile_target_role")
-        ai_level = st.select_slider("AI 基础水平", options=["完全小白", "了解概念", "用过 AI 工具", "做过 AI 项目", "能独立设计 AI 产品方案"], key="profile_ai_level")
+        ai_level_options = ["1 完全小白", "2 了解基础概念", "3 熟练使用 AI 工具", "4 做过 AI 项目/能设计方案"]
+        if st.session_state.get("profile_ai_level") not in ai_level_options:
+            st.session_state.profile_ai_level = ai_level_options[2]
+        st.markdown("**AI 基础水平（请选择一个等级）**")
+        ai_level = st.radio(
+            "AI 基础水平",
+            options=ai_level_options,
+            key="profile_ai_level",
+            horizontal=True,
+            label_visibility="collapsed",
+        )
         product_experience = st.text_area("你已有的项目/产品/运营经历", key="profile_project", height=110)
         biggest_confusion = st.text_input("当前最大困惑", key="profile_confusion")
         submitted = st.button("生成经历转译", type="primary", use_container_width=True)
