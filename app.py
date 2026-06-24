@@ -5,6 +5,7 @@ import json
 import time
 import uuid
 import html
+import random
 from datetime import datetime
 
 import httpx
@@ -320,23 +321,74 @@ KNOWLEDGE_BASE = {
     },
 }
 
+COMMON_INTERVIEW_QUESTIONS = [
+    "请介绍一个你做过的项目，并说明它可以如何迁移到 AI 产品场景。",
+    "如果要把一个传统业务流程改造成 AI 产品，你会如何判断适不适合用 AI？",
+    "你如何评估一个 AI 功能是否真的解决了用户问题？",
+    "请讲一个你从业务数据中发现问题并推动改进的经历。",
+    "如果用户说 AI 输出不准，你会如何定位问题？",
+    "你会如何设计一个 AI 功能的 MVP？",
+    "你如何判断一个场景应该用 Prompt、RAG 还是 Agent？",
+    "如果模型会产生幻觉，你会如何做产品兜底？",
+    "你如何设计 AI 产品的用户反馈闭环？",
+    "你会如何衡量 AI 产品上线后的效果？",
+    "请讲一个你做过的需求分析案例。",
+    "请讲一个你做过的数据分析案例，并说明它如何支持产品决策。",
+    "如果业务方提出一个很模糊的 AI 需求，你会如何澄清？",
+    "你如何把用户痛点转化成产品功能？",
+    "你如何设计 AI 产品的指标体系？",
+    "如果 AI 功能成本很高但效果不错，你会如何取舍？",
+    "如果 AI 功能响应慢，你会从哪些维度分析？",
+    "你如何设计人工审核和 AI 自动化之间的边界？",
+    "你如何向非技术业务方解释 RAG？",
+    "你如何向非技术业务方解释 Agent？",
+    "请举例说明你如何做跨团队协作。",
+    "如果算法、工程和业务方意见不一致，你会如何推进？",
+    "你如何判断一个 AI 产品是否值得继续迭代？",
+    "如果上线后用户不使用 AI 功能，你会怎么分析？",
+    "你如何设计 AI 产品的灰度发布？",
+    "你如何收集和利用用户反馈优化 AI 功能？",
+    "请讲一个失败或效果不佳的项目复盘。",
+    "如果你没有完整 AI 项目经验，你会如何证明自己适合 AI 产品岗？",
+    "你如何把过往非 AI 项目经验迁移到 AI 产品表达？",
+    "请设计一个 AI 助手类产品的核心流程。",
+    "你如何设计知识库问答产品的引用来源展示？",
+    "你如何评估 RAG 的召回质量？",
+    "你如何设计 Agent 的工具调用失败兜底？",
+    "你如何定义 AI 生成内容的质量标准？",
+    "如果用户不信任 AI 结果，你会如何提升可信度？",
+    "你如何设计 AI 产品中的权限和安全边界？",
+    "你如何处理 AI 产品中的合规风险？",
+    "你会如何做竞品分析来判断 AI 产品机会？",
+    "请说明一个你认为适合做作品集的 AI 产品方向。",
+    "你如何把作品集讲成面试中的项目经历？",
+    "如果面试官追问技术细节，你会如何回答到合适深度？",
+    "你如何说明一个 AI 产品的商业价值？",
+    "你如何区分用户真正需求和伪需求？",
+    "你如何设计 AI 产品的冷启动体验？",
+    "你如何降低用户第一次使用 AI 功能的学习成本？",
+    "如果模型输出不稳定，你会如何设计重试、提示和人工接管？",
+    "你如何评估一个 AI 功能对效率的提升？",
+    "你如何评估一个 AI 功能对业务转化的影响？",
+    "你如何把一份复杂文档处理流程改造成 AI 产品？",
+    "你如何把一个表格分析流程改造成 AI 产品？",
+    "你如何设计 AI 产品的日志、埋点和效果看板？",
+    "你如何向面试官证明自己具备 AI 产品思维？",
+]
+
 INTERVIEW_QUESTIONS = {
-    "通用 AI 产品岗": [
-        "请介绍一个你做过的项目，并说明它可以如何迁移到 AI 产品场景。",
-        "如果要把一个传统业务流程改造成 AI 产品，你会如何判断适不适合用 AI？",
-        "你如何评估一个 AI 功能是否真的解决了用户问题？",
-    ],
-    "AI 产品经理": [
+    "通用 AI 产品岗": COMMON_INTERVIEW_QUESTIONS,
+    "AI 产品经理": COMMON_INTERVIEW_QUESTIONS + [
         "请介绍一个你做过或设计过的 AI 产品项目，并说明为什么这个场景适合用 AI。",
         "如果模型效果不稳定，你作为产品经理会如何定位问题并推动优化？",
         "RAG 和模型微调分别适合什么场景？你会如何做选型？",
     ],
-    "Agent 产品经理": [
+    "Agent 产品经理": COMMON_INTERVIEW_QUESTIONS + [
         "请设计一个 AI Agent 的核心工作流，并说明它和普通聊天机器人的区别。",
         "Agent 调用工具失败时，你会如何设计兜底策略？",
         "如何评估一个 Agent 产品是否真正完成了用户任务？",
     ],
-    "AIGC 产品经理": [
+    "AIGC 产品经理": COMMON_INTERVIEW_QUESTIONS + [
         "AIGC 产品最核心的用户价值是什么？和传统内容工具有什么区别？",
         "你会如何设计 AIGC 产品的内容审核和质量控制机制？",
         "如果用户生成内容满意度低，你会从哪些维度分析原因？",
@@ -878,14 +930,44 @@ def build_contextual_interview_answer():
     background_part = compact(background, "我的背景和经历里有一些可以迁移到 AI 产品岗的部分", 120)
     portfolio_part = compact(portfolio_goal, "后续可以做一个小型 AI 产品原型，用来展示从业务问题到产品方案的思考", 130)
 
+    base_intro = (
+        f"我的背景是：{background_part}。具体项目上，{project_part}。"
+        f"结合当前作品集方向，{portfolio_part}。"
+    )
+    if any(word in question for word in ["评估", "指标", "效果", "解决了用户问题", "是否真的"]):
+        return (
+            f"我会结合一个具体项目来回答。{base_intro}"
+            "如果判断它是否真的解决用户问题，我不会只看功能有没有做出来，而会拆成三层：第一，用户是否真的完成了原来的任务；第二，效率或质量有没有提升；第三，用户是否愿意持续使用。"
+            "如果迁移到 AI 产品里，我会设计任务完成率、人工复核通过率、用户采纳率、错误率和反馈率等指标。"
+            "比如作品集里可以让 AI 先输出分析结果，再让用户确认是否有用，通过确认率和修改意见判断 AI 是否真的帮到了用户。"
+        )
+    if any(word in question for word in ["RAG", "Agent", "Prompt", "微调", "选型", "技术"]):
+        return (
+            f"我会先从业务场景出发，而不是先选技术。{base_intro}"
+            "如果场景需要查找大量内部资料、合同、知识库或历史记录，我会优先考虑 RAG；如果需要连续完成多个步骤，比如识别问题、检索资料、调用工具、生成结果和转人工，我会考虑 Agent；"
+            "如果只是轻量改写、分类、总结或生成，可以先用 Prompt 方案验证。"
+            "我的作品集会重点说明为什么选择这个方案、它的边界是什么、失败时怎么兜底，而不是只说用了某个 AI 技术。"
+        )
+    if any(word in question for word in ["不稳定", "失败", "兜底", "幻觉", "不准", "风险"]):
+        return (
+            f"我会把这个问题拆成产品风险来处理。{base_intro}"
+            "如果 AI 输出不稳定，我会先区分是输入资料问题、检索问题、Prompt 问题，还是模型能力边界问题。"
+            "产品上我会设计三类兜底：第一，输出引用来源或依据，方便用户核对；第二，对高风险结果加人工确认；第三，保留用户反馈入口，把错误样例沉淀成后续优化材料。"
+            "所以我的回答重点不是承诺 AI 一定正确，而是说明如何让用户在可控范围内使用 AI。"
+        )
+    if any(word in question for word in ["作品集", "证明", "没有完整 AI 项目", "迁移"]):
+        return (
+            f"我会把过往项目和作品集结合起来讲。{base_intro}"
+            "虽然我过去的项目不一定是完整 AI 产品，但它里面有业务理解、问题拆解、流程整理和结果复盘。"
+            "我会把这些经验迁移到 AI 产品场景里：先找到一个真实痛点，再设计 AI 能介入的环节，最后用作品集原型展示用户流程、AI 输出、人工复核和指标设计。"
+            "这样面试官看到的不是我硬包装经历，而是我能把业务问题转成 AI 产品方案。"
+        )
     return (
-        f"我可以结合这个问题来讲一个我做过的项目。我的背景是：{background_part}。"
-        f"具体项目上，{project_part}。"
-        f"这个项目里我真正做的不是单纯执行，而是先理解业务问题，再整理信息、分析数据或流程，最后推动一个更清晰的解决方案。"
+        f"我可以结合这个问题来讲一个我做过的项目。{base_intro}"
+        "这个项目里我真正做的不是单纯执行，而是先理解业务问题，再整理信息、分析数据或流程，最后推动一个更清晰的解决方案。"
         f"如果迁移到 {target_role} 场景，我会把它理解成一个‘把业务经验产品化’的问题：先明确用户是谁、痛点是什么、现在流程哪里低效，"
-        f"再判断哪些环节适合用 AI 介入，比如资料整理、信息抽取、内容生成、风险提示、智能问答或流程自动化。"
-        f"结合我当前的作品集方向，{portfolio_part}。"
-        f"所以这段经历能说明我有业务理解、问题拆解、流程梳理和结果复盘的基础，但如果要进一步匹配 AI 产品岗，我还需要补充 AI 能力选型、指标评估和失败兜底的表达。"
+        "再判断哪些环节适合用 AI 介入，比如资料整理、信息抽取、内容生成、风险提示、智能问答或流程自动化。"
+        "所以这段经历能说明我有业务理解、问题拆解、流程梳理和结果复盘的基础，但如果要进一步匹配 AI 产品岗，我还需要补充 AI 能力选型、指标评估和失败兜底的表达。"
     )
 
 
@@ -1119,19 +1201,14 @@ with main_col:
 
             col_a, col_b, col_c = st.columns([1, 1, 1])
             with col_a:
-                if st.button("下一道面试题", type="primary", use_container_width=True):
-                    ranked = sorted(
-                        enumerate(question_bank),
-                        key=lambda kv: -sum(1 for d in weak_dims if d.replace(" ", "") in kv[1].replace(" ", "")),
-                    )
-                    idx = ranked[st.session_state.interview_index % len(ranked)][0]
-                    st.session_state.interview_question = question_bank[idx]
+                if st.button("随机抽一道面试题", type="primary", use_container_width=True):
+                    st.session_state.interview_question = random.choice(question_bank)
                     st.session_state.interview_index += 1
                     st.session_state.interview_review = ""
             with col_b:
                 if st.button("填入示例回答", use_container_width=True):
                     if not st.session_state.interview_question:
-                        st.session_state.interview_question = question_bank[0]
+                        st.session_state.interview_question = random.choice(question_bank)
                     st.session_state.interview_answer = build_contextual_interview_answer()
                     st.rerun()
             with col_c:
@@ -1209,14 +1286,9 @@ with main_col:
                 st.session_state.agent_max_rounds = max_rounds
             with col2:
                 if st.button("开始一场抗追问面试", type="primary", use_container_width=True):
-                    weak_dims = top_weak_dimensions(st.session_state.device_id, top_n=2)
-                    ranked = sorted(
-                        enumerate(question_bank),
-                        key=lambda kv: -sum(1 for d in weak_dims if d.replace(" ", "") in kv[1].replace(" ", "")),
-                    )
-                    idx = ranked[0][0]
-                    st.session_state.agent_question = question_bank[idx]
-                    st.session_state.agent_dialogue = [{"role": "interviewer", "content": question_bank[idx]}]
+                    start_question = random.choice(question_bank)
+                    st.session_state.agent_question = start_question
+                    st.session_state.agent_dialogue = [{"role": "interviewer", "content": start_question}]
                     st.session_state.agent_round = 0
                     st.session_state.agent_state = "awaiting_user"
                     st.session_state.agent_final_review = ""
