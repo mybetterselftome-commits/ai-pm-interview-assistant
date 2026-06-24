@@ -1297,6 +1297,19 @@ with main_col:
         st.markdown('<div class="section-title">面试知识补强：只保留掌握度自测</div>', unsafe_allow_html=True)
         st.markdown('<div class="subtle-note">这里不再做大面积知识库展示，只判断一个知识点是否达到面试可用、产品可用、抗追问可用的深度。</div>', unsafe_allow_html=True)
 
+        mastery_examples = [
+            ("示例1 · RAG", "RAG", "RAG 是检索增强生成。我的理解是，它适合企业知识库、合同资料、项目文档这类需要引用外部资料的场景。产品上不是简单让大模型回答，而是先检索相关资料，再让模型基于资料生成答案。面试里我会重点讲它能降低乱编风险，但也要关注知识切分、召回准确率、引用来源和人工复核。"),
+            ("示例2 · Agent", "Agent", "Agent 可以理解成能围绕一个目标连续完成任务的 AI 系统，不只是回答一句话。比如智能客服或工程资料助手，需要先理解用户意图，再决定是否检索知识库、调用工具、生成结果或转人工。产品经理要重点设计任务流程、工具权限、失败兜底和结果评估，避免 Agent 自己乱行动。"),
+            ("示例3 · 模型评估", "模型评估", "模型评估不是只看回答好不好，而是要根据产品场景定义标准。比如问答产品要看准确率、引用是否正确、用户是否采纳；生成类产品要看质量、稳定性和合规风险。上线前可以做人工评审和测试集评估，上线后还要结合用户反馈和业务指标持续优化。"),
+        ]
+        cols = st.columns(3)
+        for idx, (label, example_topic, explanation) in enumerate(mastery_examples):
+            with cols[idx]:
+                if st.button(label, key=f"mastery_example_{idx}", use_container_width=True):
+                    st.session_state.mastery_topic = example_topic
+                    st.session_state.mastery_explanation = explanation
+                    st.rerun()
+
         topic = st.text_input("要自测的知识点", key="mastery_topic", placeholder="例如：RAG、Agent、模型评估、Prompt 工程")
         target_role = st.selectbox("你更想准备哪类岗位？", list(CAREER_PATHS.keys()), key="mastery_target_role")
         user_explanation = st.text_area("先用你自己的话解释这个知识点", key="mastery_explanation", height=150, placeholder="不要复制定义，按你面试时会怎么说来写。")
