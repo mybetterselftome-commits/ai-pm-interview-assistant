@@ -1035,6 +1035,36 @@ def generate_ai_interview_example_answer(role, question):
     return build_contextual_interview_answer()
 
 
+def generate_ai_portfolio_goal(role):
+    context = "\n\n".join(
+        part for part in [
+            build_profile_context_for_agent(),
+            build_evidence_context("引用全部上下文"),
+            f"## 用户填写的背景\n{st.session_state.get('profile_background', '')}",
+            f"## 用户填写的项目经历\n{st.session_state.get('profile_project', '')}",
+        ] if part.strip()
+    )
+    system_prompt = """你是一位 AI 产品作品集教练。请根据候选人的背景、JD 解读和经历转译结果，生成一句「想证明的能力 / 想做的方向」，用于作品集规划输入框。
+
+要求：
+1. 必须结合候选人真实背景和行业，不要泛泛说「做一个 AI 助手」。
+2. 要明确：想做什么方向的 AI 产品、想证明哪几项能力。
+3. 不要编造用户没有的经历或数据。
+4. 只输出一句话，60-120 字，第一人称，不要用 Markdown，不要加引号。"""
+    user_prompt = f"""
+目标岗位：{role}
+
+候选人上下文：
+{context or '用户尚未提供充分背景，请基于目标岗位给出一个通用但具体的方向。'}
+
+请生成一句作品集方向。
+"""
+    generated = call_ai_raw(system_prompt, user_prompt, temperature=0.5)
+    if generated and not generated.startswith("[生成失败"):
+        return generated.strip().strip('"「」')
+    return build_contextual_portfolio_goal()
+
+
 def render_example_buttons(key_prefix):
     labels = [
         ("填入示例1", "内容运营"),
@@ -1194,8 +1224,9 @@ with main_col:
             ["只会用 AI 工具", "会简单 Streamlit / Python", "会 API 调用", "能做前后端原型", "已有完整项目经验"],
             key="portfolio_tech_level",
         )
-        if st.button("填入一个相关示例方向", key="portfolio_goal_example", use_container_width=True):
-            st.session_state.portfolio_goal = build_contextual_portfolio_goal()
+        if st.button("根据前面内容生成一个方向", key="portfolio_goal_example", use_container_width=True):
+            with st.spinner("正在根据 JD、经历转译和背景生成作品集方向..."):
+                st.session_state.portfolio_goal = generate_ai_portfolio_goal(target_role)
             st.rerun()
         portfolio_goal = st.text_area("你想证明的能力 / 想做的方向（可选）", key="portfolio_goal", height=100)
         portfolio_submitted = st.button("生成作品集材料方案", type="primary", use_container_width=True)
