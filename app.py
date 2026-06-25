@@ -1065,6 +1065,47 @@ def generate_ai_portfolio_goal(role):
     return build_contextual_portfolio_goal()
 
 
+def generate_ai_mastery_example(role):
+    context = "\n\n".join(
+        part for part in [
+            build_profile_context_for_agent(),
+            build_evidence_context("引用全部上下文"),
+            f"## 用户填写的背景\n{st.session_state.get('profile_background', '')}",
+            f"## 用户填写的项目经历\n{st.session_state.get('profile_project', '')}",
+            f"## 作品集方向\n{st.session_state.get('portfolio_goal', '')}",
+        ] if part.strip()
+    )
+    system_prompt = """你是一位 AI 产品岗面试知识教练。请根据候选人的背景、JD 和作品集方向，挑一个最值得他自测的 AI 产品知识点，并给一段口语化的示例解释。
+
+要求：
+1. 知识点要和候选人方向相关，比如做合同/成本就偏 RAG、结构化抽取、人工复核；做客服就偏 Agent、工具调用、转人工。
+2. 解释要像面试时口头说的，80-140 字，讲清产品价值、边界或指标，不要写成定义。
+3. 不要编造用户没有的项目数据。
+4. 严格用两行输出，格式：
+知识点：<一个知识点>
+解释：<一段解释>"""
+    user_prompt = f"""
+目标岗位：{role}
+
+候选人上下文：
+{context or '用户尚未提供充分背景，请给出一个通用但具体的 AI 产品知识点示例。'}
+
+请按指定格式输出一个知识点示例。
+"""
+    generated = call_ai_raw(system_prompt, user_prompt, temperature=0.6)
+    if generated and not generated.startswith("[生成失败"):
+        topic, explanation = "", ""
+        for line in generated.splitlines():
+            line = line.strip()
+            if line.startswith("知识点"):
+                topic = line.split("：", 1)[-1].split(":", 1)[-1].strip()
+            elif line.startswith("解释"):
+                explanation = line.split("：", 1)[-1].split(":", 1)[-1].strip()
+        if topic and explanation:
+            return topic, explanation
+    return random.choice(MASTERY_EXAMPLES)
+
+
 def render_example_buttons(key_prefix):
     labels = [
         ("填入示例1", "内容运营"),
@@ -1483,8 +1524,10 @@ with main_col:
         st.markdown('<div class="section-title">面试知识补强：只保留掌握度自测</div>', unsafe_allow_html=True)
         st.markdown('<div class="subtle-note">这里不再做大面积知识库展示，只判断一个知识点是否达到面试可用、产品可用、抗追问可用的深度。</div>', unsafe_allow_html=True)
 
-        if st.button("随机填入一个知识点示例", key="mastery_random_example", use_container_width=True):
-            example_topic, explanation = random.choice(MASTERY_EXAMPLES)
+        if st.button("根据前面内容生成一个知识点", key="mastery_random_example", use_container_width=True):
+            mastery_role = st.session_state.get("mastery_target_role") or next(iter(CAREER_PATHS))
+            with st.spinner("正在根据你的方向生成一个知识点示例..."):
+                example_topic, explanation = generate_ai_mastery_example(mastery_role)
             st.session_state.mastery_topic = example_topic
             st.session_state.mastery_explanation = explanation
             st.rerun()
