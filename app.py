@@ -168,6 +168,13 @@ st.markdown("""
     .rail-brand { font-size: 1rem; font-weight: 900; color: #111827; line-height: 1.25; margin: 0.2rem 0 0.15rem 0; }
     .rail-subtitle { color: #6b7280; font-size: 0.78rem; line-height: 1.4; margin-bottom: 0.75rem; }
     .rail-toggle-hint { color: #9ca3af; font-size: 0.72rem; text-align: center; }
+    div[data-testid="column"]:has(.rail-anchor) {
+        position: sticky;
+        top: 1rem;
+        align-self: flex-start;
+        height: fit-content;
+        z-index: 5;
+    }
     .result-box {
         background: #ffffff;
         border-radius: 14px;
@@ -1061,6 +1068,7 @@ nav_items = [
 if st.session_state.show_left_nav:
     left_col, toggle_col, main_col = st.columns([0.18, 0.035, 0.785], gap="small")
     with left_col:
+        st.markdown('<div class="rail-anchor"></div>', unsafe_allow_html=True)
         st.markdown('<div class="rail-brand">AI PM 求职准备工作台</div>', unsafe_allow_html=True)
         st.markdown('<div class="rail-subtitle">AI PM 面试准备助手<br/>从 JD 到面试，一步步准备</div>', unsafe_allow_html=True)
         for section, num, text in nav_items:
