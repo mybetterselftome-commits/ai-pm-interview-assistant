@@ -717,6 +717,20 @@ def build_profile_context_for_agent():
     return "\n\n".join(parts)
 
 
+def build_current_input_context():
+    """只用当前输入框里的原始内容，避免引用上一个行业残留的已生成结果。"""
+    parts = []
+    if st.session_state.get("profile_background"):
+        parts.append("## 用户背景\n" + st.session_state.profile_background)
+    if st.session_state.get("profile_project"):
+        parts.append("## 已有经历\n" + st.session_state.profile_project)
+    if st.session_state.get("jd_text"):
+        parts.append("## 目标岗位 JD\n" + st.session_state.jd_text[:1200])
+    if st.session_state.get("profile_confusion"):
+        parts.append("## 当前最大困惑\n" + st.session_state.profile_confusion)
+    return "\n\n".join(parts)
+
+
 def save_asset(asset_type, title, content):
     if not content:
         return
@@ -1044,25 +1058,18 @@ def generate_ai_interview_example_answer(role, question):
 
 
 def generate_ai_portfolio_goal(role):
-    context = "\n\n".join(
-        part for part in [
-            build_profile_context_for_agent(),
-            build_evidence_context("引用全部上下文"),
-            f"## 用户填写的背景\n{st.session_state.get('profile_background', '')}",
-            f"## 用户填写的项目经历\n{st.session_state.get('profile_project', '')}",
-        ] if part.strip()
-    )
-    system_prompt = """你是一位 AI 产品作品集教练。请根据候选人的背景、JD 解读和经历转译结果，生成一句「想证明的能力 / 想做的方向」，用于作品集规划输入框。
+    context = build_current_input_context()
+    system_prompt = """你是一位 AI 产品作品集教练。请只根据候选人当前填写的背景、项目经历和目标岗位 JD，生成一句「想证明的能力 / 想做的方向」，用于作品集规划输入框。
 
 要求：
-1. 必须结合候选人真实背景和行业，不要泛泛说「做一个 AI 助手」。
+1. 必须严格基于候选人当前填写的行业和经历，不要引入其它行业的内容。
 2. 要明确：想做什么方向的 AI 产品、想证明哪几项能力。
 3. 不要编造用户没有的经历或数据。
 4. 只输出一句话，60-120 字，第一人称，不要用 Markdown，不要加引号。"""
     user_prompt = f"""
 目标岗位：{role}
 
-候选人上下文：
+候选人当前填写的内容：
 {context or '用户尚未提供充分背景，请基于目标岗位给出一个通用但具体的方向。'}
 
 请生成一句作品集方向。
@@ -1074,19 +1081,11 @@ def generate_ai_portfolio_goal(role):
 
 
 def generate_ai_mastery_example(role):
-    context = "\n\n".join(
-        part for part in [
-            build_profile_context_for_agent(),
-            build_evidence_context("引用全部上下文"),
-            f"## 用户填写的背景\n{st.session_state.get('profile_background', '')}",
-            f"## 用户填写的项目经历\n{st.session_state.get('profile_project', '')}",
-            f"## 作品集方向\n{st.session_state.get('portfolio_goal', '')}",
-        ] if part.strip()
-    )
-    system_prompt = """你是一位 AI 产品岗面试知识教练。请根据候选人的背景、JD 和作品集方向，挑一个最值得他自测的 AI 产品知识点，并给一段口语化的示例解释。
+    context = build_current_input_context()
+    system_prompt = """你是一位 AI 产品岗面试知识教练。请只根据候选人当前填写的背景、经历和目标岗位 JD，挑一个最值得他自测的 AI 产品知识点，并给一段口语化的示例解释。
 
 要求：
-1. 知识点要和候选人方向相关，比如做合同/成本就偏 RAG、结构化抽取、人工复核；做客服就偏 Agent、工具调用、转人工。
+1. 知识点要和候选人当前行业方向相关，不要引入其它行业，比如做合同/成本就偏 RAG、结构化抽取、人工复核；做客服就偏 Agent、工具调用、转人工；做内容就偏内容生成、质量控制、效果指标。
 2. 解释要像面试时口头说的，80-140 字，讲清产品价值、边界或指标，不要写成定义。
 3. 不要编造用户没有的项目数据。
 4. 严格用两行输出，格式：
@@ -1095,7 +1094,7 @@ def generate_ai_mastery_example(role):
     user_prompt = f"""
 目标岗位：{role}
 
-候选人上下文：
+候选人当前填写的内容：
 {context or '用户尚未提供充分背景，请给出一个通用但具体的 AI 产品知识点示例。'}
 
 请按指定格式输出一个知识点示例。
