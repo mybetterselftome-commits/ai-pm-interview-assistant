@@ -1419,8 +1419,17 @@ with main_col:
 
             col1, col2, col3 = st.columns([1, 1, 1])
             with col1:
-                max_rounds = st.slider("最多追问轮数", 2, 6, st.session_state.agent_max_rounds, key="agent_max_rounds_slider")
-                st.session_state.agent_max_rounds = max_rounds
+                round_options = [2, 3, 4, 5, 6]
+                if st.session_state.agent_max_rounds not in round_options:
+                    st.session_state.agent_max_rounds = 4
+                st.markdown("**最多追问轮数**")
+                max_rounds = st.radio(
+                    "最多追问轮数",
+                    options=round_options,
+                    horizontal=True,
+                    key="agent_max_rounds",
+                    label_visibility="collapsed",
+                )
             with col2:
                 if st.button("开始一场抗追问面试", type="primary", use_container_width=True):
                     start_question = random.choice(question_bank)
@@ -1444,11 +1453,14 @@ with main_col:
                             st.markdown(turn["content"])
 
                 if st.session_state.agent_state == "awaiting_user":
-                    user_reply = st.chat_input("你的回答（说完后回车提交）")
-                    if user_reply:
-                        st.session_state.agent_dialogue.append({"role": "candidate", "content": user_reply})
-                        st.session_state.agent_round += 1
+                    last_question = next(
+                        (t["content"] for t in reversed(st.session_state.agent_dialogue) if t["role"] == "interviewer"),
+                        st.session_state.agent_question,
+                    )
 
+                    def process_candidate_reply(reply):
+                        st.session_state.agent_dialogue.append({"role": "candidate", "content": reply})
+                        st.session_state.agent_round += 1
                         if st.session_state.agent_round >= st.session_state.agent_max_rounds:
                             st.session_state.agent_state = "ready_for_review"
                         else:
@@ -1470,6 +1482,14 @@ with main_col:
                             if followup:
                                 st.session_state.agent_dialogue.append({"role": "interviewer", "content": followup.strip()})
                         st.rerun()
+
+                    if st.button("填入一个示例回答", key="agent_example_answer", use_container_width=True):
+                        with st.spinner("正在根据当前追问和前面内容生成示例回答..."):
+                            example = generate_ai_interview_example_answer(agent_role, last_question)
+                        process_candidate_reply(example)
+                    user_reply = st.chat_input("你的回答（说完后回车提交）")
+                    if user_reply:
+                        process_candidate_reply(user_reply)
 
                 if st.session_state.agent_state == "ready_for_review" and not st.session_state.agent_final_review:
                     weak_focus = [t["dimension"] for t in st.session_state.weakness_tags[:3] if t.get("dimension")]
