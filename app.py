@@ -931,6 +931,14 @@ def fill_example(example_name=None):
     st.session_state.kb_search = f"{example['mastery_topic']} 怎么讲给面试官听？"
     st.session_state.mastery_topic = example["mastery_topic"]
     st.session_state.mastery_explanation = example["mastery_explanation"]
+    # 切换示例时清空上一行业已生成的结果，避免不同行业内容串在一起
+    st.session_state.jd_result = ""
+    st.session_state.profile_result = ""
+    st.session_state.portfolio_result = ""
+    st.session_state.interview_question = ""
+    st.session_state.interview_review = ""
+    st.session_state.mastery_result = ""
+    st.session_state.loop_result = ""
 
 
 def build_contextual_portfolio_goal():
