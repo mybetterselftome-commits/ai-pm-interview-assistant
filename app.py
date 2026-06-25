@@ -1524,10 +1524,8 @@ with main_col:
         st.markdown('<div class="section-title">面试知识补强：只保留掌握度自测</div>', unsafe_allow_html=True)
         st.markdown('<div class="subtle-note">这里不再做大面积知识库展示，只判断一个知识点是否达到面试可用、产品可用、抗追问可用的深度。</div>', unsafe_allow_html=True)
 
-        if st.button("根据前面内容生成一个知识点", key="mastery_random_example", use_container_width=True):
-            mastery_role = st.session_state.get("mastery_target_role") or next(iter(CAREER_PATHS))
-            with st.spinner("正在根据你的方向生成一个知识点示例..."):
-                example_topic, explanation = generate_ai_mastery_example(mastery_role)
+        if st.button("随机填入一个知识点示例", key="mastery_random_example", use_container_width=True):
+            example_topic, explanation = random.choice(MASTERY_EXAMPLES)
             st.session_state.mastery_topic = example_topic
             st.session_state.mastery_explanation = explanation
             st.rerun()
