@@ -7,7 +7,6 @@ import uuid
 import html
 import random
 from datetime import datetime
-from urllib.parse import quote
 
 import httpx
 import streamlit as st
@@ -87,13 +86,10 @@ st.markdown("""
 
     .stApp { background: #f7f8fb; color: #111827; }
     .main .block-container {
-        width: calc(100% - 330px);
-        max-width: none;
-        margin-left: 300px;
-        margin-right: 24px;
+        max-width: 1420px;
         padding-top: 1rem;
-        padding-left: 0;
-        padding-right: 0;
+        padding-left: 2rem;
+        padding-right: 2rem;
         padding-bottom: 2.4rem;
     }
 
@@ -172,39 +168,6 @@ st.markdown("""
     .rail-brand { font-size: 1rem; font-weight: 900; color: #111827; line-height: 1.25; margin: 0.2rem 0 0.15rem 0; }
     .rail-subtitle { color: #6b7280; font-size: 0.78rem; line-height: 1.4; margin-bottom: 0.75rem; }
     .rail-toggle-hint { color: #9ca3af; font-size: 0.72rem; text-align: center; }
-    .fixed-rail {
-        position: fixed;
-        left: 24px;
-        top: 24px;
-        width: 248px;
-        height: calc(100vh - 48px);
-        overflow-y: auto;
-        z-index: 1000;
-        padding: 0.25rem 0.15rem;
-        background: transparent;
-    }
-    .fixed-rail a {
-        display: block;
-        text-decoration: none;
-        color: #111827;
-        background: #ffffff;
-        border: 1px solid #d1d5db;
-        border-radius: 10px;
-        padding: 0.78rem 0.9rem;
-        margin: 0.7rem 0;
-        text-align: center;
-        font-weight: 800;
-        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.035);
-    }
-    .fixed-rail a.active {
-        border-color: #6366f1;
-        background: #eef2ff;
-        color: #3730a3;
-    }
-    .fixed-rail a:hover {
-        border-color: #6366f1;
-        box-shadow: 0 8px 20px rgba(99, 102, 241, 0.12);
-    }
     .result-box {
         background: #ffffff;
         border-radius: 14px;
@@ -1095,29 +1058,24 @@ nav_items = [
     ("补强闭环/我的资产", "05", "沉淀下一步"),
 ]
 
-section_param = st.query_params.get("section")
-valid_sections = [section for section, _, _ in nav_items]
-if section_param in valid_sections and section_param != st.session_state.active_section:
-    st.session_state.active_section = section_param
+if st.session_state.show_left_nav:
+    left_col, toggle_col, main_col = st.columns([0.18, 0.035, 0.785], gap="small")
+    with left_col:
+        st.markdown('<div class="rail-brand">AI PM 求职准备工作台</div>', unsafe_allow_html=True)
+        st.markdown('<div class="rail-subtitle">AI PM 面试准备助手<br/>从 JD 到面试，一步步准备</div>', unsafe_allow_html=True)
+        for section, num, text in nav_items:
+            active_mark = "● " if st.session_state.active_section == section else ""
+            if st.button(f"{active_mark}{num} {section}", key=f"nav_{section}", use_container_width=True):
+                st.session_state.active_section = section
+                st.rerun()
+else:
+    toggle_col, main_col = st.columns([0.035, 0.965], gap="small")
 
-rail_links = []
-for section, num, text in nav_items:
-    active_class = " active" if st.session_state.active_section == section else ""
-    href = f"?device_id={quote(st.session_state.device_id)}&section={quote(section)}"
-    rail_links.append(f'<a class="{active_class}" href="{href}">{num} {section}</a>')
-
-st.markdown(
-    f"""
-    <div class="fixed-rail">
-        <div class="rail-brand">AI PM 求职准备工作台</div>
-        <div class="rail-subtitle">AI PM 面试准备助手<br/>从 JD 到面试，一步步准备</div>
-        {''.join(rail_links)}
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
-main_col = st.container()
+with toggle_col:
+    toggle_icon = "‹" if st.session_state.show_left_nav else "›"
+    if st.button(toggle_icon, key="toggle_left_nav", help="隐藏/展开目录"):
+        st.session_state.show_left_nav = not st.session_state.show_left_nav
+        st.rerun()
 
 with main_col:
 
