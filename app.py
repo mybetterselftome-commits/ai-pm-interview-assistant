@@ -169,11 +169,18 @@ st.markdown("""
     .rail-subtitle { color: #6b7280; font-size: 0.78rem; line-height: 1.4; margin-bottom: 0.75rem; }
     .rail-toggle-hint { color: #9ca3af; font-size: 0.72rem; text-align: center; }
     div[data-testid="column"]:has(.rail-anchor) {
-        position: sticky;
-        top: 1rem;
+        position: relative;
         align-self: flex-start;
-        height: fit-content;
-        z-index: 5;
+        min-height: 1px;
+    }
+    div[data-testid="column"]:has(.rail-anchor) > div {
+        position: fixed;
+        top: 1rem;
+        left: 2rem;
+        width: 240px;
+        max-height: calc(100vh - 2rem);
+        overflow-y: auto;
+        z-index: 20;
     }
     .result-box {
         background: #ffffff;
