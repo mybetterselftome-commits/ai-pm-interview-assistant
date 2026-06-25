@@ -87,10 +87,13 @@ st.markdown("""
 
     .stApp { background: #f7f8fb; color: #111827; }
     .main .block-container {
-        max-width: 1420px;
+        width: calc(100% - 330px);
+        max-width: none;
+        margin-left: 300px;
+        margin-right: 24px;
         padding-top: 1rem;
-        padding-left: 310px;
-        padding-right: 2rem;
+        padding-left: 0;
+        padding-right: 0;
         padding-bottom: 2.4rem;
     }
 
